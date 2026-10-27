@@ -1,0 +1,636 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>配置中心 · 智测编排</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>
+  .muted { color: var(--tx-3); }
+  .mini { font-size: 10.5px; color: var(--tx-3); }
+  .tbl-wrap { overflow-x: auto; }
+  .tbl-wrap .table { min-width: 700px; }
+  .setgrid { display: grid; grid-template-columns: 1fr 330px; gap: 14px; align-items: start; }
+  @media (max-width: 1240px) { .setgrid { grid-template-columns: 1fr; } }
+  .switch { display: inline-flex; align-items: center; gap: 8px; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; color: var(--tx-2); font-size: 12px; }
+  .switch .track { width: 34px; height: 18px; border-radius: 20px; background: var(--bg-4); position: relative; transition: background .16s var(--ease); flex: none; }
+  .switch .track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--tx-3); transition: left .16s var(--ease), background .16s var(--ease); }
+  .switch.on .track { background: rgba(16,185,129,.3); }
+  .switch.on .track::after { left: 18px; background: var(--ok-400); }
+  .switch.on { color: var(--tx-1); }
+  .chan { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line-1); border-radius: var(--r-md); background: var(--bg-2); margin-bottom: 8px; }
+  .chan .cico { width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; background: var(--bg-4); font-size: 12px; flex: none; }
+  .chan .cname { font-size: 12px; }
+  .chks { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px 14px; }
+  .chks label { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--tx-2); cursor: pointer; }
+  input[type=checkbox] { accent-color: var(--brand-500); width: 13px; height: 13px; cursor: pointer; }
+  .scope { display: flex; flex-direction: column; gap: 9px; }
+  .scope .srow { border: 1px solid var(--line-1); border-radius: var(--r-md); padding: 10px 12px; background: var(--bg-2); }
+  .scope .srow .sl { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; }
+  .scope .srow p { margin: 5px 0 0; font-size: 11px; color: var(--tx-3); line-height: 1.55; }
+  .scope .arrow { text-align: center; color: var(--tx-4); font-size: 11px; }
+  .mat { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .mat th { padding: 8px 6px; font-size: 10.5px; color: var(--tx-3); font-weight: 500; text-align: center; border-bottom: 1px solid var(--line-1); }
+  .mat th:first-child { text-align: left; }
+  .mat td { padding: 7px 6px; text-align: center; border-bottom: 1px solid var(--line-1); }
+  .mat td:first-child { text-align: left; color: var(--tx-1); }
+  .mat tr:hover td { background: var(--bg-2); }
+  .rule { display: flex; gap: 9px; padding: 9px 0; border-bottom: 1px solid var(--line-1); align-items: flex-start; }
+  .rule:last-child { border-bottom: none; }
+  .rule .rico { color: var(--err-400); flex: none; font-size: 12px; margin-top: 1px; }
+  .rule .rt { font-size: 12px; font-weight: 500; }
+  .rule .rd { font-size: 11px; color: var(--tx-3); margin-top: 2px; line-height: 1.5; }
+  .cred { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-1); }
+  .cred:last-child { border-bottom: none; }
+  .cred .cm { font-family: var(--mono); font-size: 11.5px; color: var(--tx-2); }
+  .env-st { display: inline-flex; align-items: center; gap: 6px; }
+  .mask { letter-spacing: .5px; }
+</style>
+</head><body>
+<div class="app">
+  <a class="brand" href="dashboard.html">
+    <div class="brand-mark">智</div>
+    <div class="brand-text"><b>智测编排</b><span>AI TEST ORCHESTRATOR</span></div>
+  </a>
+  <header class="topbar"></header>
+  <aside class="side"></aside>
+  <main class="main"><div class="page">
+
+    <div class="page-head">
+      <div>
+        <h2>配置中心</h2>
+        <p>PRD §6.8 统一配置 —— 集中管理驱动、模型、通知、环境检测与权限控制</p>
+      </div>
+      <div class="actions">
+        <span class="tag warn" id="dirtyTag" style="display:none">未保存</span>
+        <button class="btn" id="btnRevert">撤销修改</button>
+        <button class="btn primary" id="btnSaveAll">保存全部配置</button>
+      </div>
+    </div>
+
+    <div class="setgrid">
+      <div class="card">
+        <div class="tabs">
+          <div class="tab active" data-tab="drive">驱动配置</div>
+          <div class="tab" data-tab="model">模型默认值</div>
+          <div class="tab" data-tab="notify">通知配置</div>
+          <div class="tab" data-tab="env">环境检测</div>
+          <div class="tab" data-tab="perm">权限与安全</div>
+        </div>
+
+        <!-- ============ 1. 驱动配置 ============ -->
+        <div class="tab-panel active" data-panel="drive">
+          <div class="card-body">
+            <div class="notice info" style="margin-bottom:14px">
+              <span class="ico">i</span>
+              <div>预算、熔断与并发由平台代码强制执行，不交由模型判断。节点级与工作流级的预算不得突破此处设定的全站上限。</div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>全局超时（分钟）</label>
+                <input class="input" id="dTimeout" type="number" min="1" value="30">
+                <div class="hint">单次运行超过该时长按超时策略终止。</div>
+              </div>
+              <div class="field">
+                <label>并发上限（同时运行工作流）</label>
+                <input class="input" id="dConc" type="number" min="1" value="5">
+                <div class="hint">超出后新运行进入排队。</div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>单节点 Token 预算</label>
+                <input class="input" id="dNodeBudget" type="number" min="1000" step="1000" value="120000">
+              </div>
+              <div class="field">
+                <label>工作流 Token 预算</label>
+                <input class="input" id="dWfBudget" type="number" min="1000" step="1000" value="800000">
+                <div class="hint">参考最近运行均量设定。</div>
+              </div>
+            </div>
+            <div class="field-row-3">
+              <div class="field">
+                <label>重试策略</label>
+                <select class="select" id="dRetry">
+                  <option>指数退避</option><option>线性退避</option><option>固定间隔</option><option>不重试</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>最大重试次数</label>
+                <input class="input" id="dRetryN" type="number" min="0" max="5" value="2">
+              </div>
+              <div class="field">
+                <label>熔断阈值（连续失败节点数）</label>
+                <input class="input" id="dFuse" type="number" min="1" max="10" value="3">
+              </div>
+            </div>
+            <div class="field">
+              <label>预算 / 熔断超限行为</label>
+              <select class="select" id="dOver">
+                <option>硬停止（终止工作流）</option>
+                <option>降级输出（标记部分失败并继续）</option>
+                <option>升级人工（挂起等待人工确认）</option>
+              </select>
+              <div class="hint">循环节点另受最大迭代次数与无进展检测约束。</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn primary" id="btnSaveDrive">保存驱动配置</button>
+              <span class="mini" id="driveState"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 2. 模型默认值 ============ -->
+        <div class="tab-panel" data-panel="model">
+          <div class="card-body">
+            <div class="notice warn" style="margin-bottom:14px">
+              <span class="ico">!</span>
+              <div><b>个人级配置不影响全站默认。</b>用户自带的模型凭据与参数仅对本人可见，不改变此处设定的全站默认模型；节点级配置仅在显式指定时覆盖上级。</div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>全站默认文本模型</label>
+                <select class="select" id="mText"></select>
+              </div>
+              <div class="field">
+                <label>全站默认视觉模型</label>
+                <select class="select" id="mVision"></select>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Temperature</label>
+                <input class="input" id="mTemp" type="number" min="0" max="2" step="0.1" value="0.3">
+                <div class="hint">0 ~ 2，越低越稳定。</div>
+              </div>
+              <div class="field">
+                <label>Top-P</label>
+                <input class="input" id="mTopP" type="number" min="0" max="1" step="0.05" value="0.9">
+              </div>
+            </div>
+            <div class="field">
+              <label>节点级覆盖</label>
+              <div style="display:flex;align-items:center;gap:12px">
+                <button class="switch on" id="swOverride" aria-pressed="true"><span class="track"></span><span id="swOverrideTxt">允许节点覆盖全站默认</span></button>
+              </div>
+              <div class="hint" id="overrideHint">关闭后，所有节点强制使用全站默认模型与参数，节点配置面板中的模型项将变为只读。</div>
+            </div>
+            <hr class="hr">
+            <div class="mini" style="margin-bottom:8px">已配置模型（来源：模型与额度）</div>
+            <div class="tbl-wrap">
+              <table class="table" id="modelTable">
+                <thead><tr><th>模型</th><th>提供方</th><th>适用范围</th><th>视觉</th><th>默认参数</th><th class="actions">操作</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:8px">
+              <button class="btn primary" id="btnSaveModel">保存模型默认值</button>
+              <button class="btn" id="btnTestModel">连接测试</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 3. 通知配置 ============ -->
+        <div class="tab-panel" data-panel="notify">
+          <div class="card-body">
+            <div class="mini" style="margin-bottom:8px">通知渠道</div>
+            <div id="chanList" style="margin-bottom:16px"></div>
+
+            <div class="mini" style="margin-bottom:8px">通知事件</div>
+            <div class="chks" id="evtList" style="margin-bottom:16px"></div>
+
+            <div class="field">
+              <label>接收人</label>
+              <input class="input" id="nTo" value="雪 樱 · 测试架构师">
+              <div class="hint" id="nHint"></div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn primary" id="btnSaveNotify">保存通知配置</button>
+              <button class="btn" id="btnTestNotify">发送测试通知</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 4. 环境检测 ============ -->
+        <div class="tab-panel" data-panel="env">
+          <div class="card-body">
+            <div class="notice" style="margin-bottom:14px">
+              <span class="ico">◈</span>
+              <div>被测环境在执行前需通过连通性检测，检测失败的节点将按冲突与降级策略处理。</div>
+            </div>
+            <div class="tbl-wrap">
+              <table class="table" id="envTable">
+                <thead><tr><th>名称</th><th>地址</th><th>环境类型</th><th>连通性</th><th>延迟</th><th class="actions">操作</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:8px">
+              <button class="btn primary" id="btnAddEnv">＋ 添加环境</button>
+              <button class="btn" id="btnCheckAll">全部检测</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 5. 权限与安全 ============ -->
+        <div class="tab-panel" data-panel="perm">
+          <div class="card-body">
+            <div class="mini" style="margin-bottom:8px">角色权限矩阵</div>
+            <div class="tbl-wrap" style="margin-bottom:16px">
+              <table class="mat" id="permTable"></table>
+            </div>
+
+            <div class="mini" style="margin-bottom:4px">安全红线规则</div>
+            <div class="notice err" style="margin-bottom:8px">
+              <span class="ico">⛔</span>
+              <div>安全红线规则为 <b>平台级强制</b>，<b>不可被节点配置覆盖</b>；节点级与个人级配置与其冲突时以红线为准。</div>
+            </div>
+            <div id="ruleList" style="margin-bottom:16px"></div>
+
+            <div class="mini" style="margin-bottom:4px">凭据管理</div>
+            <div class="notice warn" style="margin-bottom:8px">
+              <span class="ico">!</span>
+              <div>平台不展示、不存储明文密钥。节点通过<b>凭据引用</b>注入密钥，明文不明文落盘。</div>
+            </div>
+            <div id="credList" style="margin-bottom:16px"></div>
+
+            <button class="btn primary" id="btnSavePerm">保存权限与安全配置</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 右侧说明栏 ============ -->
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-head"><h3>配置生效范围</h3><span class="sub">继承关系</span></div>
+          <div class="card-body">
+            <div class="scope">
+              <div class="srow">
+                <div class="sl"><span class="tag brand">全站级</span>管理员配置</div>
+                <p>模型默认值、预算与并发、通知规则、权限矩阵与安全红线。对全平台生效。</p>
+              </div>
+              <div class="arrow">↓ 个人级在允许范围内覆盖</div>
+              <div class="srow">
+                <div class="sl"><span class="tag info">个人级</span>用户配置</div>
+                <p>用户自带的模型凭据、参数与额度。<b>不影响全站默认</b>，仅对本人生效。</p>
+              </div>
+              <div class="arrow">↓ 节点级在允许范围内覆盖</div>
+              <div class="srow">
+                <div class="sl"><span class="tag violet">节点级</span>编排者配置</div>
+                <p>单个节点的模型、参数、预算与重试策略。<b>不得覆盖安全红线规则</b>，越权项将被拦截并记录审计。</p>
+              </div>
+            </div>
+            <hr class="hr">
+            <div class="mini" id="dirtyHint">当前无未保存修改。</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>运行约束概览</h3><span class="sub">平台强制</span></div>
+          <div class="card-body">
+            <dl class="kv">
+              <dt>预算执行</dt><dd>平台代码强制，不由模型判断</dd>
+              <dt>门禁裁决</dt><dd>确定性规则引擎 + 人工审批</dd>
+              <dt>工具白名单</dt><dd>运行时拦截并记审计</dd>
+              <dt>资源锁</dt><dd>超时自动回收，冲突不 deadlock</dd>
+              <dt>密钥</dt><dd>不明文落盘，仅引用注入</dd>
+            </dl>
+            <hr class="hr">
+            <button class="btn primary block" id="btnSaveAll2">保存全部配置</button>
+            <div class="mini" style="margin-top:8px">保存后配置下发至运行时，立即对新发起的运行生效。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div></main>
+</div>
+<script src="assets/js/app.js"></script>
+<script>
+/* ==========================================================================
+   统一配置中心（PRD §6.8）
+   ========================================================================== */
+
+/* ---- 通知渠道与事件 ---- */
+const CHANNELS = [
+  { id: 'inapp',  name: '站内通知', icon: '◱', on: true,  desc: '平台内消息中心与铃铛提醒' },
+  { id: 'mail',   name: '邮件',     icon: '✉', on: true,  desc: '发送至配置的接收人邮箱' },
+  { id: 'wecom',  name: '企业微信', icon: '☏', on: false, desc: '推送到企业微信群机器人' }
+];
+const NOTIFY_EVENTS = [
+  { id: 'wf_fail',  name: '工作流失败', on: true },
+  { id: 'gate',     name: '质量门禁阻断', on: true },
+  { id: 'approval', name: '人工审批待处理', on: true },
+  { id: 'asset',    name: '资产失效提醒', on: false }
+];
+
+/* ---- 角色与权限矩阵 ---- */
+const PERMS = ['查看工作流', '编辑工作流', '执行工作流', '发布工作流', '管理资产', '管理资源', '管理配置', '外部调度'];
+const ROLES = [
+  { id: 'qa',    name: '测试工程师', desc: '使用平台执行测试任务', allow: [0, 2] },
+  { id: 'sd',    name: '测试开发',   desc: '搭建测试框架与资产',   allow: [0, 1, 2, 4] },
+  { id: 'adm',   name: '管理员',     desc: '全量配置与治理权限',   allow: [0, 1, 2, 3, 4, 5, 6, 7] },
+  { id: 'ext',   name: '外部调用方', desc: '受控调用平台对外能力', allow: [0, 2] }
+];
+
+/* ---- 安全红线规则（PRD §9） ---- */
+const RED_LINES = [
+  { t: '凭据不落明文', d: '密钥以引用方式注入节点，平台不存储明文，界面仅展示脱敏值。' },
+  { t: '安全红线不可被节点配置覆盖', d: '个人级 / 节点级配置与红线冲突时，一律以红线为准并记录审计。' },
+  { t: '破坏性测试内置熔断', d: '安全探测节点禁止越界攻击，命中破坏性操作阈值立即中止。' },
+  { t: '工具白名单外调用运行时拒绝', d: '节点独立上下文与工具白名单，违规调用被拦截并写入审计账本。' },
+  { t: '资源锁超时自动回收', d: '锁具备超时自动释放，锁冲突不导致死锁，锁事件可追溯。' },
+  { t: '关键裁决由规则引擎做出', d: '质量门禁与计划确认门的通过 / 阻断结论由确定性规则引擎或人工审批决定。' }
+];
+
+/* ---- 凭据（仅脱敏值） ---- */
+const CREDS = [
+  { id: 'c1', name: '主模型服务 API Key', scope: '全站级', mask: 'sk-••••••••••••-9F2A' },
+  { id: 'c2', name: '企业微信机器人 Webhook', scope: '全站级', mask: '…/webhook/send?key=••••••••' },
+  { id: 'c3', name: '告警邮件发件账号', scope: '全站级', mask: 'al•••@corp.test' },
+  { id: 'c4', name: '设备农场访问令牌', scope: '全站级', mask: '••••••••••••••••' }
+];
+
+/* ---- 被测环境（首个条目取自 RESOURCES 的 staging-env） ---- */
+let ENVS = [
+  { id: 'env_1', name: 'staging-env', url: 'https://staging.internal.test', type: '测试环境', status: 'unknown', latency: null, expect: 'pass' },
+  { id: 'env_2', name: 'ci-runner-env', url: 'https://ci.env.test', type: 'CI 环境', status: 'unknown', latency: null, expect: 'pass' },
+  { id: 'env_3', name: 'prod-readonly', url: 'https://api.prod.test', type: '生产只读', status: 'unknown', latency: null, expect: 'fail' }
+];
+let ENV_SEQ = 0;
+
+/* ---- 脏标记 ---- */
+let dirty = false;
+function setDirtyTag(on) {
+  ['#dirtyTag', '#dirtyTop'].forEach(sel => { const t = $(sel); if (t) t.style.display = on ? '' : 'none'; });
+}
+function markDirty() {
+  dirty = true;
+  setDirtyTag(true);
+  $('#dirtyHint').textContent = '存在未保存的修改，点击「保存全部配置」后下发生效。';
+  $('#driveState').textContent = '有未保存的修改';
+}
+function clearDirty() {
+  dirty = false;
+  setDirtyTag(false);
+  $('#dirtyHint').textContent = '当前无未保存修改。';
+  $('#driveState').textContent = '已保存';
+}
+
+/* ---- 渲染：模型默认值 ---- */
+function renderModels() {
+  const textM = MODELS.filter(m => m.text);
+  const visM = MODELS.filter(m => m.vision);
+  $('#mText').innerHTML = textM.map(m => '<option value="' + esc(m.id) + '">' + esc(m.name) + ' · ' + esc(m.provider) + '</option>').join('');
+  $('#mVision').innerHTML = visM.map(m => '<option value="' + esc(m.id) + '">' + esc(m.name) + ' · ' + esc(m.provider) + '</option>').join('');
+  const def = MODELS.find(m => m.id === 'mdl_1');
+  if (def) { $('#mText').value = def.id; $('#mTemp').value = def.temp; $('#mTopP').value = def.topP; }
+  const v = MODELS.find(m => m.id === 'mdl_5');
+  if (v) $('#mVision').value = v.id;
+
+  $('#modelTable tbody').innerHTML = MODELS.map(m =>
+    '<tr><td><b>' + esc(m.name) + '</b>' + (m.id === 'mdl_1' ? ' <span class="tag brand">全站默认</span>' : '') + '</td>' +
+    '<td>' + esc(m.provider) + '</td>' +
+    '<td><span class="tag">' + esc(m.scope) + (m.role ? ' · ' + esc(m.role) : '') + '</span></td>' +
+    '<td>' + (m.vision ? '<span class="tag ok">支持</span>' : '<span class="tag">不支持</span>') + '</td>' +
+    '<td class="mono">T ' + m.temp + ' / P ' + m.topP + '</td>' +
+    '<td class="actions"><button class="btn xs" data-mtest="' + esc(m.id) + '">连接测试</button></td></tr>'
+  ).join('');
+}
+
+/* ---- 渲染：通知 ---- */
+function renderChannels() {
+  $('#chanList').innerHTML = CHANNELS.map(c =>
+    '<div class="chan"><div class="cico">' + c.icon + '</div>' +
+      '<div style="flex:1;min-width:0"><div class="cname">' + esc(c.name) + '</div><div class="mini">' + esc(c.desc) + '</div></div>' +
+      '<button class="switch ' + (c.on ? 'on' : '') + '" data-chan="' + c.id + '" aria-pressed="' + c.on + '">' +
+        '<span class="track"></span><span>' + (c.on ? '已开启' : '已关闭') + '</span></button>' +
+    '</div>').join('');
+  $('#evtList').innerHTML = NOTIFY_EVENTS.map(e =>
+    '<label><input type="checkbox" data-evt="' + e.id + '"' + (e.on ? ' checked' : '') + '> ' + esc(e.name) + '</label>').join('');
+  const stale = ASSETS.filter(a => a.status === 'stale').length;
+  $('#nHint').textContent = '当前有 ' + stale + ' 项认证资产可能失效，启用「资产失效提醒」可在状态变更时通知。';
+}
+
+/* ---- 渲染：环境 ---- */
+function envStatusTag(s) {
+  if (s === 'pass') return '<span class="tag ok dot">通过</span>';
+  if (s === 'fail') return '<span class="tag err dot">失败</span>';
+  if (s === 'checking') return '<span class="tag info dot">检测中</span>';
+  return '<span class="tag dot">未检测</span>';
+}
+function renderEnvs() {
+  const tb = $('#envTable tbody');
+  if (!ENVS.length) {
+    tb.innerHTML = '<tr><td colspan="6"><div class="empty" style="padding:26px"><div class="ico">◌</div><h4>暂无被测环境</h4><p>添加环境后可在执行前进行连通性检测</p></div></td></tr>';
+    return;
+  }
+  tb.innerHTML = ENVS.map(e =>
+    '<tr data-env="' + esc(e.id) + '">' +
+      '<td><b>' + esc(e.name) + '</b></td>' +
+      '<td class="mono">' + esc(e.url) + '</td>' +
+      '<td><span class="tag">' + esc(e.type) + '</span></td>' +
+      '<td><span class="env-st">' + envStatusTag(e.status) + '</span></td>' +
+      '<td class="mono">' + (e.latency === null ? '<span class="muted">—</span>' : e.latency + ' ms') + '</td>' +
+      '<td class="actions">' +
+        '<button class="btn xs" data-eact="check" data-env="' + esc(e.id) + '"' + (e.status === 'checking' ? ' disabled' : '') + '>' + (e.status === 'checking' ? '检测中' : '检测') + '</button>' +
+        '<button class="btn xs danger" data-eact="del" data-env="' + esc(e.id) + '">删除</button>' +
+      '</td></tr>').join('');
+}
+function checkEnv(id) {
+  const e = ENVS.find(x => x.id === id);
+  if (!e || e.status === 'checking') return;
+  e.status = 'checking'; e.latency = null;
+  renderEnvs();
+  setTimeout(() => {
+    const seed = 0;
+    for (let i = 0; i < e.name.length; i++) seed += e.name.charCodeAt(i);
+    const latency = 60 + (seed % 380);
+    e.latency = latency;
+    e.status = e.expect === 'fail' ? 'fail' : 'pass';
+    renderEnvs();
+    toast(e.status === 'pass'
+      ? '连通性检测通过：' + e.name + '（' + latency + ' ms）'
+      : '连通性检测失败：' + e.name + '（需授权后重试）', e.status === 'pass' ? 'ok' : 'err');
+    markDirty();
+  }, 1100);
+}
+
+/* ---- 渲染：权限矩阵 ---- */
+function renderPerms() {
+  let h = '<thead><tr><th>角色</th>' + PERMS.map(p => '<th>' + esc(p) + '</th>').join('') + '</tr></thead><tbody>';
+  ROLES.forEach(r => {
+    h += '<tr><td><b>' + esc(r.name) + '</b><div class="mini">' + esc(r.desc) + '</div></td>';
+    PERMS.forEach((p, i) => {
+      const on = r.allow.indexOf(i) >= 0;
+      h += '<td><input type="checkbox" data-role="' + esc(r.id) + '" data-perm="' + i + '"' + (on ? ' checked' : '') + '></td>';
+    });
+    h += '</tr>';
+  });
+  $('#permTable').innerHTML = h + '</tbody>';
+}
+
+/* ---- 渲染：红线与凭据 ---- */
+function renderRules() {
+  $('#ruleList').innerHTML = RED_LINES.map(r =>
+    '<div class="rule"><span class="rico">⛔</span><div><div class="rt">' + esc(r.t) + ' <span class="tag err">平台级强制</span></div>' +
+    '<div class="rd">' + esc(r.d) + '</div></div></div>').join('');
+  $('#credList').innerHTML = CREDS.map(c =>
+    '<div class="cred"><span class="rico" style="color:var(--tx-4)">🔑</span>' +
+      '<div style="flex:1;min-width:0"><div style="font-size:12px">' + esc(c.name) + ' <span class="tag">' + esc(c.scope) + '</span></div>' +
+      '<div class="cm mask">' + esc(c.mask) + '</div></div>' +
+      '<button class="btn xs" data-cred="' + esc(c.id) + '">轮换</button></div>').join('');
+}
+
+/* ---- 交互绑定 ---- */
+function bind() {
+  /* 驱动配置 */
+  $('#btnSaveDrive').addEventListener('click', () => {
+    clearDirty();
+    toast('驱动配置已保存并下发', 'ok');
+  });
+  ['dTimeout', 'dConc', 'dNodeBudget', 'dWfBudget', 'dRetry', 'dRetryN', 'dFuse', 'dOver'].forEach(id => {
+    $('#' + id).addEventListener('change', markDirty);
+  });
+
+  /* 模型默认值 */
+  $('#btnSaveModel').addEventListener('click', () => { clearDirty(); toast('模型默认值已保存', 'ok'); });
+  $('#btnTestModel').addEventListener('click', () => {
+    const m = MODELS.find(x => x.id === $('#mText').value);
+    toast('连接测试完成：' + (m ? m.name : '默认模型') + ' 可用', 'ok');
+  });
+  $('#modelTable').addEventListener('click', e => {
+    const b = e.target.closest('[data-mtest]');
+    if (!b) return;
+    const m = MODELS.find(x => x.id === b.dataset.mtest);
+    if (!m) return;
+    if (m.status === 'error') { toast('连接失败：' + m.name + ' 凭据不可用', 'err'); return; }
+    toast('连接测试通过：' + m.name, 'ok');
+  });
+  const sw = $('#swOverride');
+  sw.addEventListener('click', () => {
+    const on = !sw.classList.contains('on');
+    sw.classList.toggle('on', on);
+    sw.setAttribute('aria-pressed', String(on));
+    $('#swOverrideTxt').textContent = on ? '允许节点覆盖全站默认' : '禁止节点覆盖全站默认';
+    $('#overrideHint').textContent = on
+      ? '关闭后，所有节点强制使用全站默认模型与参数，节点配置面板中的模型项将变为只读。'
+      : '已关闭：节点配置面板中的模型项为只读，所有节点强制使用全站默认模型与参数。';
+    toast(on ? '已允许节点覆盖全站默认' : '已禁止节点覆盖全站默认', on ? 'ok' : 'warn');
+    markDirty();
+  });
+  ['mText', 'mVision', 'mTemp', 'mTopP'].forEach(id => $('#' + id).addEventListener('change', markDirty));
+
+  /* 通知 */
+  $('#chanList').addEventListener('click', e => {
+    const b = e.target.closest('[data-chan]');
+    if (!b) return;
+    const c = CHANNELS.find(x => x.id === b.dataset.chan);
+    c.on = !c.on;
+    b.classList.toggle('on', c.on);
+    b.setAttribute('aria-pressed', String(c.on));
+    b.querySelector('span:last-child').textContent = c.on ? '已开启' : '已关闭';
+    toast(c.name + (c.on ? ' 已开启' : ' 已关闭'), c.on ? 'ok' : 'warn');
+    markDirty();
+  });
+  $('#evtList').addEventListener('change', markDirty);
+  $('#nTo').addEventListener('input', markDirty);
+  $('#btnSaveNotify').addEventListener('click', () => { clearDirty(); toast('通知配置已保存', 'ok'); });
+  $('#btnTestNotify').addEventListener('click', () => {
+    const on = CHANNELS.filter(c => c.on).map(c => c.name);
+    if (!on.length) { toast('请至少开启一个通知渠道', 'err'); return; }
+    toast('测试通知已发送：' + on.join('、') + ' → ' + $('#nTo').value, 'ok');
+  });
+
+  /* 环境检测 */
+  $('#envTable').addEventListener('click', e => {
+    const b = e.target.closest('[data-eact]');
+    if (!b) return;
+    const id = b.dataset.env;
+    if (b.dataset.eact === 'check') { checkEnv(id); return; }
+    if (b.dataset.eact === 'del') {
+      const env = ENVS.find(x => x.id === id);
+      const m = openModal(
+        '<div class="modal-head"><h3>删除被测环境</h3><span class="x" data-close>✕</span></div>' +
+        '<div class="modal-body"><div class="notice err"><span class="ico">!</span><div>确认删除 <b>' + esc(env.name) + '</b>？引用该环境的工作流节点将失去连通性检测目标。</div></div></div>' +
+        '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn danger" id="envDelOk">确认删除</button></div>'
+      );
+      $('#envDelOk', m.el).addEventListener('click', () => {
+        ENVS = ENVS.filter(x => x.id !== id);
+        m.close(); renderEnvs(); markDirty();
+        toast('已删除环境：' + env.name, 'ok');
+      });
+    }
+  });
+  $('#btnAddEnv').addEventListener('click', () => {
+    const m = openModal(
+      '<div class="modal-head"><h3>添加被测环境</h3><span class="x" data-close>✕</span></div>' +
+      '<div class="modal-body">' +
+        '<div class="field"><label>环境名称 <span class="req">*</span></label><input class="input" id="envName" placeholder="如 pre-prod-env"></div>' +
+        '<div class="field"><label>访问地址 <span class="req">*</span></label><input class="input" id="envUrl" placeholder="https://…"></div>' +
+        '<div class="field"><label>环境类型</label><select class="select" id="envType">' +
+          '<option>测试环境</option><option>CI 环境</option><option>预发环境</option><option>生产只读</option></select></div>' +
+      '</div>' +
+      '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="envAddOk">添加</button></div>'
+    );
+    $('#envAddOk', m.el).addEventListener('click', () => {
+      const name = $('#envName', m.el).value.trim();
+      const url = $('#envUrl', m.el).value.trim();
+      if (!name || !url) { toast('名称与地址均为必填', 'err'); return; }
+      ENV_SEQ++;
+      ENVS.push({ id: 'env_new_' + ENV_SEQ, name: name, url: url, type: $('#envType', m.el).value, status: 'unknown', latency: null, expect: 'pass' });
+      m.close(); renderEnvs(); markDirty();
+      toast('已添加环境：' + name, 'ok');
+    });
+  });
+  $('#btnCheckAll').addEventListener('click', () => {
+    ENVS.forEach(e => { if (e.status !== 'checking') checkEnv(e.id); });
+    toast('已发起全部环境连通性检测', 'ok');
+  });
+
+  /* 权限与安全 */
+  $('#permTable').addEventListener('change', markDirty);
+  $('#credList').addEventListener('click', e => {
+    const b = e.target.closest('[data-cred]');
+    if (!b) return;
+    const c = CREDS.find(x => x.id === b.dataset.cred);
+    toast('已提交轮换申请：' + c.name + '（新值仍以脱敏形式展示）', 'ok');
+    markDirty();
+  });
+  $('#btnSavePerm').addEventListener('click', () => { clearDirty(); toast('权限与安全配置已保存', 'ok'); });
+
+  /* 全局保存 / 撤销 */
+  const saveAll = () => {
+    clearDirty();
+    toast('全部配置已保存并下发至运行时', 'ok');
+  };
+  $('#btnSaveAll').addEventListener('click', saveAll);
+  $('#btnSaveAll2').addEventListener('click', saveAll);
+  $('#btnRevert').addEventListener('click', () => {
+    clearDirty();
+    toast('已撤销未保存的修改', 'warn');
+  });
+}
+
+/* ---- 启动 ---- */
+document.addEventListener('DOMContentLoaded', () => {
+  renderShell('settings', {
+    title: '配置中心',
+    sub: '全站级',
+    actions: '<span class="tag warn" id="dirtyTop" style="display:none">未保存</span><button class="btn primary" id="btnTopSave">保存全部配置</button>'
+  });
+  $('#btnTopSave').addEventListener('click', () => { clearDirty(); toast('全部配置已保存并下发至运行时', 'ok'); });
+
+  renderModels();
+  renderChannels();
+  renderEnvs();
+  renderPerms();
+  renderRules();
+  bind();
+  clearDirty();
+
+  const qp = new URLSearchParams(location.search);
+  const tab = qp.get('tab');
+  if (tab) {
+    const t = $('.tab[data-tab="' + tab + '"]');
+    if (t) t.click();
+  }
+});
+</script>
+</body></html>

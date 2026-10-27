@@ -1,0 +1,472 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>认证资产库 · 智测编排</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>
+  /* 本页专属：资产卡片 / 认证明细 */
+  .asset-card{cursor:pointer;transition:border-color .15s var(--ease),transform .15s var(--ease)}
+  .asset-card:hover{border-color:var(--line-3);transform:translateY(-2px)}
+  .asset-card.stale{border-color:rgba(245,158,11,.4)}
+  .ac-top{display:flex;align-items:flex-start;gap:8px}
+  .ac-title{font-size:13px;font-weight:600;line-height:1.4;flex:1;min-width:0}
+  .ac-id{font-family:var(--mono);font-size:10.5px;color:var(--tx-3);white-space:nowrap}
+  .ac-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px}
+  .ac-scope{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+  .ac-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:11px}
+  .ac-metrics .m{background:var(--bg-2);border:1px solid var(--line-1);border-radius:var(--r-sm);padding:6px 8px}
+  .ac-metrics .k{font-size:10px;color:var(--tx-3)}
+  .ac-metrics .v{font-family:var(--mono);font-size:12.5px;font-weight:600;margin-top:1px}
+  .ac-foot{display:flex;align-items:center;gap:6px;margin-top:11px;padding-top:10px;border-top:1px solid var(--line-1)}
+  .ac-foot .who{font-size:10.5px;color:var(--tx-3);margin-right:auto}
+  .stale-flag{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:var(--r-sm);
+    background:rgba(245,158,11,.11);border:1px solid rgba(245,158,11,.32);font-size:11.5px;color:var(--warn-400);margin-top:10px}
+  .cert-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  @media (max-width:1500px){.cert-grid{grid-template-columns:1fr}}
+  .cert-item{border:1px solid var(--line-1);border-radius:var(--r-md);background:var(--bg-2);padding:10px 12px}
+  .cert-item .ci-h{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}
+  .cert-item .ci-v{font-family:var(--mono);font-size:11.5px;color:var(--tx-2);margin-top:5px}
+  .wf-ref{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line-1);
+    border-radius:var(--r-sm);background:var(--bg-2);margin-bottom:6px;font-size:12px}
+  .wf-ref .n{flex:1;min-width:0}
+  .wf-ref .d{font-size:10.5px;color:var(--tx-3)}
+  .ver-row{display:flex;gap:10px;align-items:flex-start}
+  .ver-row .v{font-family:var(--mono);font-size:12px;font-weight:600;width:52px;flex:none}
+  .drawer-title{display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line-1);background:var(--bg-2)}
+</style>
+</head><body>
+<div class="app">
+  <a class="brand" href="dashboard.html">
+    <div class="brand-mark">智</div>
+    <div class="brand-text"><b>智测编排</b><span>AI TEST ORCHESTRATOR</span></div>
+  </a>
+  <header class="topbar"></header>
+  <aside class="side"></aside>
+  <main class="main"><div class="page">
+
+    <!-- KPI -->
+    <div class="grid grid-5" style="margin-bottom:14px">
+      <div class="stat"><div class="k">资产总数</div><div class="v" id="kTotal">0</div><div class="d" id="kTotalD">—</div></div>
+      <div class="stat"><div class="k">已认证</div><div class="v ok" id="kCert">0</div><div class="d" id="kCertD">—</div></div>
+      <div class="stat"><div class="k">待认证</div><div class="v warn" id="kPend">0</div><div class="d" id="kPendD">—</div></div>
+      <div class="stat"><div class="k">可能失效</div><div class="v err" id="kStale">0</div><div class="d" id="kStaleD">—</div></div>
+      <div class="stat"><div class="k">本月复用次数</div><div class="v brand" id="kUse">0</div><div class="d" id="kUseD">—</div></div>
+    </div>
+
+    <!-- 筛选 -->
+    <div class="toolbar">
+      <select class="select" id="fType" style="width:200px"></select>
+      <select class="select" id="fStatus" style="width:140px">
+        <option value="all">全部状态</option>
+        <option value="certified">已认证</option>
+        <option value="pending">待认证</option>
+        <option value="stale">可能失效</option>
+      </select>
+      <select class="select" id="fScope" style="width:150px"></select>
+      <span class="sep"></span>
+      <div class="search"><input class="input" id="fSearch" placeholder="搜索资产名称 / ID / 负责人"></div>
+      <button class="btn ghost" id="fReset">重置</button>
+      <div class="topbar-spacer"></div>
+      <span class="tag" id="fCount">0 项</span>
+    </div>
+
+    <div class="page-head" style="margin-bottom:12px">
+      <div>
+        <h2 style="font-size:16px;margin:0 0 3px">认证资产</h2>
+        <p>可认证 · 可版本化 · 可复用；生成类节点可优先检索认证资产作为上下文</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnCite">引用到工作流</button>
+        <button class="btn primary" id="btnCertifyAll">批量重新认证</button>
+      </div>
+    </div>
+
+    <div class="grid grid-3" id="assetGrid"></div>
+    <div id="emptyBox" style="display:none">
+      <div class="card"><div class="empty"><div class="ico">🏅</div><h4>没有匹配的资产</h4><p>调整筛选条件或重置后再试</p></div></div>
+    </div>
+
+  </div></main>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script>
+/* ==========================================================================
+   认证资产库 —— 数据全部派生自 app.js 的 Mock 常量
+   ========================================================================== */
+/* 认证门槛（与 AUDIT EVT-88204「变异分数 0.44 低于门槛 0.70」一致） */
+const GATE = { quality:85, mutation:0.70, stability:0.85, sideEffect:'无阻断' };
+const TYPE_TAG = {
+  '认证用例':'brand','认证自动化脚本':'info','认证测试数据模板':'violet',
+  '认证能力包':'ok','代码变更驱动的生成用例':'warn'
+};
+/* 资产适用范围 → 被哪些工作流引用（按 ASSETS.scope 派生） */
+const SCOPE_WF = {
+  '订单中心':['wf_cicd'], '电商':['wf_cicd'], '用户中心':['wf_api'], '支付':['wf_cicd','wf_api'],
+  '全平台':['wf_cicd','wf_explore','wf_mobile','wf_api','wf_design','wf_sec','wf_perf','wf_a11y'],
+  '账号':['wf_cicd','wf_api','wf_a11y'], '商品':['wf_cicd'], '移动端':['wf_mobile'], '购物车':['wf_cicd','wf_mobile']
+};
+const $q = new URLSearchParams(location.search);
+const state = { type:'all', status:'all', scope:'all', q:'', sel:null };
+/* 本地覆盖：仅用于演示「重新认证」后的状态变化 */
+const OVERRIDE = {};
+
+function assets(){ return ASSETS.map(a => Object.assign({}, a, OVERRIDE[a.id] || {})); }
+function stKey(a){ return (a.id + ' ' + a.name + ' ' + a.type + ' ' + a.owner + ' ' + a.scope.join(' ')).toLowerCase(); }
+function statusText(s){ return s === 'certified' ? '已认证' : s === 'stale' ? '可能失效' : '待认证'; }
+function statusCls(s){ return s === 'certified' ? 'ok' : s === 'stale' ? 'warn' : ''; }
+function refsOf(a){
+  const ids = [];
+  a.scope.forEach(s => (SCOPE_WF[s] || []).forEach(id => { if(ids.indexOf(id) < 0) ids.push(id); }));
+  return ids.map(id => WORKFLOWS.find(w => w.id === id)).filter(Boolean);
+}
+function fmtDate(d){ return d; }
+function subDate(d, days){
+  const t = new Date(d.replace(/-/g,'/')).getTime() - days * 86400000;
+  const x = new Date(t);
+  const p = n => String(n).padStart(2, '0');
+  return x.getFullYear() + '-' + p(x.getMonth() + 1) + '-' + p(x.getDate());
+}
+
+/* ---------- 认证门槛逐项判定 ---------- */
+function certify(a){
+  const side = a.status === 'certified' ? { text:'无阻断（通过）', ok:true }
+              : a.status === 'stale'   ? { text:'发现 2 项阻断', ok:false }
+              : { text:'待执行', ok:null };
+  return [
+    { k:'质量分',      a:a.quality, t:'≥ ' + GATE.quality,   ok:a.quality >= GATE.quality },
+    { k:'变异分数',    a:a.mutation, t:'≥ ' + GATE.mutation, ok:a.mutation >= GATE.mutation },
+    { k:'稳定性',      a:a.stability, t:'≥ ' + GATE.stability, ok:a.stability >= GATE.stability },
+    { k:'副作用回归',  a:side.text, t:GATE.sideEffect, ok:side.ok }
+  ];
+}
+
+/* ---------- 渲染 ---------- */
+function renderKPI(rows){
+  const total = rows.length;
+  const cert = rows.filter(a => a.status === 'certified').length;
+  const pend = rows.filter(a => a.status === 'pending').length;
+  const stale = rows.filter(a => a.status === 'stale').length;
+  const use = rows.reduce((s,a) => s + a.use, 0);
+  animateNumber($('#kTotal'), total, 700, v => Math.round(v).toLocaleString('en-US'));
+  animateNumber($('#kCert'), cert, 700, v => Math.round(v).toLocaleString('en-US'));
+  animateNumber($('#kPend'), pend, 700, v => Math.round(v).toLocaleString('en-US'));
+  animateNumber($('#kStale'), stale, 700, v => Math.round(v).toLocaleString('en-US'));
+  animateNumber($('#kUse'), use, 700, v => Math.round(v).toLocaleString('en-US'));
+  $('#kTotalD').textContent = '当前筛选共 ' + total + ' 项';
+  $('#kCertD').textContent = '可被检索复用';
+  $('#kPendD').textContent = '等待质量门槛判定';
+  $('#kStaleD').textContent = '被测系统变更后需重新认证';
+  $('#kUseD').textContent = '含全部工作流引用次数';
+}
+
+function cardHTML(a){
+  const stale = a.status === 'stale';
+  return `
+  <div class="card asset-card ${stale ? 'stale' : ''}" data-id="${esc(a.id)}" data-skey="${esc(stKey(a))}">
+    <div class="card-body">
+      <div class="ac-top">
+        <div class="ac-title">${esc(a.name)}</div>
+        <div class="ac-id">${esc(a.id)}</div>
+      </div>
+      <div class="ac-row">
+        <span class="tag ${TYPE_TAG[a.type] || ''}">${esc(a.type)}</span>
+        <span class="tag">${esc(a.ver)}</span>
+        <span class="tag ${statusCls(a.status)} dot">${esc(statusText(a.status))}</span>
+      </div>
+      <div class="ac-scope">${a.scope.map(s => '<span class="tag">◈ ' + esc(s) + '</span>').join('')}</div>
+      ${stale ? `<div class="stale-flag"><span class="ico">⚠</span><span>被测系统已变更，资产可能失效，建议重新认证</span></div>` : ''}
+      <div class="ac-metrics">
+        <div class="m"><div class="k">质量分</div><div class="v" style="color:var(--ok-400)">${a.quality}</div></div>
+        <div class="m"><div class="k">变异分数</div><div class="v">${a.mutation.toFixed(2)}</div></div>
+        <div class="m"><div class="k">稳定性</div><div class="v">${a.stability.toFixed(2)}</div></div>
+      </div>
+      <div class="bar ${a.quality >= GATE.quality ? 'ok' : a.quality >= 70 ? 'warn' : 'err'}" style="margin-top:9px"><i style="width:${a.quality}%"></i></div>
+      <div class="ac-foot">
+        <span class="who">引用 ${a.use} 次 · ${a.suites} 套件 · ${esc(a.owner)} · ${esc(a.updated)}</span>
+        <button class="btn xs" data-act="cite" data-id="${esc(a.id)}">引用</button>
+        ${stale ? '<button class="btn xs warn" data-act="recert" data-id="' + esc(a.id) + '">重新认证</button>' : ''}
+        <button class="btn xs primary" data-act="open" data-id="${esc(a.id)}">详情</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderGrid(){
+  const rows = assets().filter(a => {
+    if(state.type !== 'all' && a.type !== state.type) return false;
+    if(state.status !== 'all' && a.status !== state.status) return false;
+    if(state.scope !== 'all' && a.scope.indexOf(state.scope) < 0) return false;
+    if(state.q && stKey(a).indexOf(state.q) < 0) return false;
+    return true;
+  });
+  $('#assetGrid').innerHTML = rows.map(cardHTML).join('');
+  $('#emptyBox').style.display = rows.length ? 'none' : 'block';
+  $('#fCount').textContent = rows.length + ' 项';
+  renderKPI(rows);
+}
+
+/* ---------- 抽屉：资产详情 ---------- */
+function openAsset(id){
+  const a = assets().find(x => x.id === id);
+  if(!a) return;
+  const items = certify(a);
+  const pass = items.filter(i => i.ok === true).length;
+  const refs = refsOf(a);
+  const hist = [0, 13, 36, 70].map((off, i) => {
+    const v = a.ver.replace(/(\d+)\.(\d+)/, (m, M, m2) => M + '.' + Math.max(0, +m2 - i));
+    return { v:v, d:subDate(a.updated, off), cur:i === 0 };
+  });
+  const html = `
+    <div class="drawer-title">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="tag ${TYPE_TAG[a.type] || ''}">${esc(a.type)}</span>
+          <span class="tag">${esc(a.ver)}</span>
+          <span class="tag ${statusCls(a.status)} dot">${esc(statusText(a.status))}</span>
+          ${a.status === 'stale' ? '<span class="tag warn">⚠ 可能失效</span>' : ''}
+        </div>
+        <div style="font-size:14px;font-weight:600;margin-top:7px">${esc(a.name)}</div>
+        <div style="font-size:11px;color:var(--tx-3);font-family:var(--mono);margin-top:3px">${esc(a.id)} · 负责人 ${esc(a.owner)} · 更新于 ${esc(a.updated)}</div>
+      </div>
+      <button class="btn sm ghost" data-dw-close>✕</button>
+    </div>
+    <div style="flex:1;overflow:auto">
+      ${a.status === 'stale' ? `<div style="padding:12px 16px 0"><div class="notice warn"><span class="ico">⚠</span>
+        <span>被测系统发生重大变更，该资产<b>可能失效</b>。请执行重新认证，或降级为普通资产后停止在门禁中引用。</span></div></div>` : ''}
+
+      <div style="padding:14px 16px">
+        <div class="sec-title">质量门槛判定明细 <span class="tag">${pass} / ${items.length} 项达标</span></div>
+        <div class="cert-grid">
+          ${items.map(i => `
+            <div class="cert-item">
+              <div class="ci-h">${esc(i.k)}
+                ${i.ok === true ? '<span class="tag ok">达标</span>' : i.ok === false ? '<span class="tag err">未达标</span>' : '<span class="tag">待定</span>'}
+              </div>
+              <div class="ci-v">实际 ${esc(String(i.a))} · 门槛 ${esc(String(i.t))}</div>
+              <div class="bar ${i.ok === true ? 'ok' : i.ok === false ? 'err' : 'warn'}" style="margin-top:7px">
+                <i style="width:${i.ok === true ? 100 : i.ok === false ? 42 : 60}%"></i>
+              </div>
+            </div>`).join('')}
+        </div>
+        <div class="notice ${pass === items.length ? 'ok' : 'err'}" style="margin-top:10px">
+          <span class="ico">${pass === items.length ? '✓' : '✕'}</span>
+          <span>${pass === items.length
+            ? '全部质量门槛达标，资产处于<b>已认证</b>状态，可被生成类节点优先检索复用。'
+            : '存在未达标项，资产不可被认证引用，生成类节点检索时应降权或排除。'}</span>
+        </div>
+
+        <div class="sec-title">适用范围</div>
+        <div class="ac-scope">${a.scope.map(s => '<span class="tag brand">◈ ' + esc(s) + '</span>').join('')}</div>
+
+        <div class="sec-title">被哪些工作流引用 <span class="tag">${refs.length} 个 · 累计引用 ${a.use} 次</span></div>
+        ${refs.length ? refs.map(w => `
+          <div class="wf-ref">
+            <span class="ico" style="color:var(--brand-400)">⑆</span>
+            <span class="n"><span>${esc(w.name)}</span><span class="d">${esc(w.owner)} · ${w.nodes} 节点 · ${esc(w.desc)}</span></span>
+            ${statusTag(w.status)}
+            <a class="btn xs" href="editor.html?wf=${esc(w.id)}">打开画布</a>
+          </div>`).join('') : '<div class="empty" style="padding:20px"><div class="ico">∅</div><h4>暂无工作流引用</h4><p>该资产尚未被任何工作流复用</p></div>'}
+
+        <div class="sec-title">版本历史</div>
+        <div class="timeline">${hist.map(h => `
+          <div class="tl-item ${h.cur ? 'ok' : ''}">
+            <h5>${esc(h.v)} ${h.cur ? '<span class="tag ok">当前</span>' : ''}</h5>
+            <div class="meta">${esc(h.d)} · ${h.cur ? '认证通过' : '历史版本'}</div>
+          </div>`).join('')}</div>
+      </div>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid var(--line-1);display:flex;gap:8px;flex-wrap:wrap;background:var(--bg-2)">
+      <button class="btn primary" data-act="lock" data-id="${esc(a.id)}">引用锁定版本</button>
+      <button class="btn" data-act="cite" data-id="${esc(a.id)}">引用到工作流</button>
+      ${a.status === 'stale' ? '<button class="btn warn" data-act="recert" data-id="' + esc(a.id) + '">重新认证</button>' : ''}
+      <a class="btn ghost" href="workflows.html">查看工作流</a>
+    </div>`;
+
+  const d = openDrawer(html, { wide:true });
+  d.el.querySelector('[data-dw-close]').addEventListener('click', d.close);
+  bindDrawerActions(d.el);
+}
+
+/* ---------- 引用到工作流：选择弹窗 ---------- */
+function openCite(id, mode){
+  const a = assets().find(x => x.id === id);
+  if(!a) return;
+  const title = mode === 'lock' ? '引用锁定版本 · ' + a.name : '引用到工作流 · ' + a.name;
+  const html = `
+    <div class="modal-head"><h3>${esc(title)}</h3><span class="x" data-close>✕</span></div>
+    <div class="modal-body">
+      <div class="notice info" style="margin-bottom:12px">
+        <span class="ico">i</span>
+        <span>资产 <b>${esc(a.id)}</b> 当前版本 <b>${esc(a.ver)}</b>，${mode === 'lock'
+          ? '引用后将锁定该版本，后续版本升级需重新评估副作用回归。'
+          : '生成类节点可优先检索该资产作为上下文，降低重复生成与幻觉。'}</span>
+      </div>
+      <div class="field"><label>选择目标工作流 <span class="req">*</span></label>
+        <div style="max-height:270px;overflow:auto;border:1px solid var(--line-1);border-radius:var(--r-md);padding:8px">
+          ${WORKFLOWS.map(w => `
+            <label class="side-link" style="cursor:pointer;border-left:none;padding:7px 8px">
+              <input type="checkbox" class="wf-pick" value="${esc(w.id)}" style="margin-right:4px">
+              <span class="ico" style="color:var(--brand-400)">⑆</span>
+              <span style="flex:1">${esc(w.name)}</span>
+              <span class="tag">${esc(w.owner)}</span>
+            </label>`).join('')}
+        </div>
+        <div class="hint">可多选；演示环境仅记录引用关系，不修改后端数据。</div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>引用方式</label>
+          <select class="select" id="citeMode">
+            <option value="latest">始终使用最新版本</option>
+            <option value="lock" ${mode === 'lock' ? 'selected' : ''}>锁定版本 ${esc(a.ver)}</option>
+          </select></div>
+        <div class="field"><label>有效期</label>
+          <select class="select" id="citeExp">
+            <option>长期有效</option><option>随工作流版本</option><option>至下次发布</option>
+          </select></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close>取消</button>
+      <button class="btn primary" id="citeGo">确认引用</button>
+    </div>`;
+  const m = openModal(html, { size:'wide' });
+  m.el.querySelector('#citeGo').addEventListener('click', () => {
+    const picked = Array.from(m.el.querySelectorAll('.wf-pick:checked')).map(c => c.value);
+    if(!picked.length){ toast('请至少选择一个工作流', 'warn'); return; }
+    picked.forEach(id => {
+      const w = WORKFLOWS.find(x => x.id === id);
+      toast((mode === 'lock' ? '已锁定 ' : '已引用 ') + a.id + ' ' + a.ver + ' → ' + (w ? w.name : id), 'ok');
+    });
+    m.el.remove();
+  });
+}
+
+/* ---------- 重新认证 ---------- */
+function recert(id){
+  const a = assets().find(x => x.id === id);
+  if(!a) return;
+  openModal(`
+    <div class="modal-head"><h3>重新认证 · ${esc(a.name)}</h3><span class="x" data-close>✕</span></div>
+    <div class="modal-body">
+      <div class="notice warn" style="margin-bottom:12px">
+        <span class="ico">⚠</span><span>该资产处于<b>可能失效</b>状态，重新认证将重新执行变异测试、稳定性评估与副作用回归。</span>
+      </div>
+      <div class="field"><label>重新认证范围</label>
+        <select class="select" id="rcScope">
+          <option>全量重新认证（变异 + 稳定性 + 副作用回归）</option>
+          <option>仅副作用回归</option>
+          <option>仅稳定性评估</option>
+        </select></div>
+      <div class="field"><label>降级策略（未达标时）</label>
+        <select class="select" id="rcFallback">
+          <option>降级为普通资产（不可在门禁中引用）</option>
+          <option>保持原认证并标记为待复核</option>
+          <option>阻断引用并通知负责人</option>
+        </select></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close>取消</button>
+      <button class="btn warn" id="rcGo">提交重新认证</button>
+    </div>`).el.querySelector('#rcGo').addEventListener('click', e => {
+      OVERRIDE[id] = { status:'pending' };
+      renderGrid();
+      $$('.modal-mask.show').forEach(x => x.remove());
+      toast('已提交重新认证：' + a.id + '（状态更新为待认证）', 'ok');
+    });
+}
+
+function bindDrawerActions(root){
+  $$('[data-act]', root).forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    const act = b.dataset.act, id = b.dataset.id;
+    if(act === 'cite') openCite(id, 'cite');
+    else if(act === 'lock') openCite(id, 'lock');
+    else if(act === 'recert') recert(id);
+  }));
+}
+
+/* ---------- 初始化 ---------- */
+function init(){
+  renderShell('assets', {
+    title:'认证资产库', sub:'可认证 · 可版本化 · 可复用',
+    actions:'<button class="btn" id="tbRefresh">⟳ 刷新</button><button class="btn primary" id="tbCite">引用到工作流</button>'
+  });
+
+  const types = Array.from(new Set(ASSETS.map(a => a.type)));
+  $('#fType').innerHTML = '<option value="all">全部类型</option>' +
+    types.map(t => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('');
+  const scopes = Array.from(new Set(ASSETS.reduce((s,a) => s.concat(a.scope), [])));
+  $('#fScope').innerHTML = '<option value="all">全部适用范围</option>' +
+    scopes.map(s => '<option value="' + esc(s) + '">' + esc(s) + '</option>').join('');
+
+  $('#fType').addEventListener('change', e => { state.type = e.target.value; renderGrid(); });
+  $('#fStatus').addEventListener('change', e => { state.status = e.target.value; renderGrid(); });
+  $('#fScope').addEventListener('change', e => { state.scope = e.target.value; renderGrid(); });
+  $('#fSearch').addEventListener('input', e => { state.q = e.target.value.trim().toLowerCase(); renderGrid(); });
+  $('#fReset').addEventListener('click', () => {
+    state.type = 'all'; state.status = 'all'; state.scope = 'all'; state.q = '';
+    $('#fType').value = 'all'; $('#fStatus').value = 'all'; $('#fScope').value = 'all'; $('#fSearch').value = '';
+    renderGrid(); toast('筛选条件已重置', 'info');
+  });
+  initFilter('#fSearch', '#assetGrid .asset-card', 'skey');
+
+  $('#assetGrid').addEventListener('click', e => {
+    const btn = e.target.closest('[data-act]');
+    if(btn){
+      e.stopPropagation();
+      const act = btn.dataset.act, id = btn.dataset.id;
+      if(act === 'cite') openCite(id, 'cite');
+      else if(act === 'recert') recert(id);
+      else if(act === 'open') openAsset(id);
+      return;
+    }
+    const card = e.target.closest('.asset-card');
+    if(card) openAsset(card.dataset.id);
+  });
+
+  $('#btnCite').addEventListener('click', () => {
+    openModal(`
+      <div class="modal-head"><h3>引用到工作流</h3><span class="x" data-close>✕</span></div>
+      <div class="modal-body">
+        <div class="field"><label>选择资产 <span class="req">*</span></label>
+          <select class="select" id="citeAsset">${assets().map(a => '<option value="' + esc(a.id) + '">' + esc(a.id) + ' · ' + esc(a.name) + ' · ' + esc(a.ver) + '</option>').join('')}</select></div>
+        <div class="field"><label>引用方式</label>
+          <select class="select"><option>始终使用最新版本</option><option>锁定当前版本</option></select></div>
+      </div>
+      <div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="goCite">下一步</button></div>`)
+      .el.querySelector('#goCite').addEventListener('click', e => {
+        const id = e.target.closest('.modal').querySelector('#citeAsset').value;
+        $$('.modal-mask.show').forEach(x => x.remove());
+        openCite(id, 'cite');
+      });
+  });
+
+  $('#btnCertifyAll').addEventListener('click', () => {
+    const stale = assets().filter(a => a.status === 'stale');
+    if(!stale.length){ toast('没有需要重新认证的资产', 'info'); return; }
+    openModal(`
+      <div class="modal-head"><h3>批量重新认证</h3><span class="x" data-close>✕</span></div>
+      <div class="modal-body">
+        <div class="notice warn"><span class="ico">⚠</span><span>将重新认证 <b>${stale.length}</b> 项可能失效的资产。</span></div>
+        <div style="margin-top:12px">${stale.map(a => `<div class="wf-ref"><span class="n"><span>${esc(a.name)}</span><span class="d">${esc(a.id)} · ${esc(a.ver)} · 更新于 ${esc(a.updated)}</span></span><span class="tag warn">可能失效</span></div>`).join('')}</div>
+      </div>
+      <div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn warn" id="bulkGo">提交</button></div>`)
+      .el.querySelector('#bulkGo').addEventListener('click', () => {
+        stale.forEach(a => { OVERRIDE[a.id] = { status:'pending' }; });
+        renderGrid();
+        $$('.modal-mask.show').forEach(x => x.remove());
+        toast('已提交 ' + stale.length + ' 项资产的重新认证', 'ok');
+      });
+  });
+
+  $('#tbRefresh').addEventListener('click', () => { renderGrid(); toast('资产列表已刷新', 'ok'); });
+  $('#tbCite').addEventListener('click', () => $('#btnCite').click());
+
+  renderGrid();
+
+  const want = $q.get('asset');
+  if(want && assets().some(a => a.id === want)) openAsset(want);
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body></html>

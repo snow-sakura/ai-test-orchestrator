@@ -1,0 +1,13 @@
+{
+  "default-workflow": {
+    "id": "default-workflow",
+    "name": "我的第一个测试工作流",
+    "nodes": [
+      {"id": "n1", "label": "开始", "type": "default", "position": {"x": 80, "y": 120}, "config": {}},
+      {"id": "n2", "label": "需求解析", "type": "default", "position": {"x": 320, "y": 120}, "config": {"type": "测试分析"}}
+    ],
+    "edges": [
+      {"id": "e1", "source": "n1", "target": "n2"}
+    ]
+  }
+}

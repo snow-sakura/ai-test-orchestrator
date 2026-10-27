@@ -1,0 +1,285 @@
+{
+  "pools": [
+    {
+      "id": "pool_device",
+      "type": "设备",
+      "name": "移动设备池",
+      "total": 4,
+      "locked": 3,
+      "free": 1,
+      "members": [
+        {
+          "id": "dev_a",
+          "label": "设备 A（iPhone 15 Pro）",
+          "status": "locked",
+          "holder": "移动端多端回归 · n_exec_a",
+          "ttl": 180
+        },
+        {
+          "id": "dev_b",
+          "label": "设备 B（Pixel 8）",
+          "status": "locked",
+          "holder": "移动端多端回归 · n_exec_b",
+          "ttl": 120
+        },
+        {
+          "id": "dev_c",
+          "label": "设备 C（Android 模拟器）",
+          "status": "locked",
+          "holder": "兼容性冒烟 · n_compat",
+          "ttl": 3600
+        },
+        {
+          "id": "dev_d",
+          "label": "设备 D（iPad）",
+          "status": "free",
+          "holder": "",
+          "ttl": 0
+        }
+      ]
+    },
+    {
+      "id": "pool_env",
+      "type": "环境",
+      "name": "测试环境池",
+      "total": 2,
+      "locked": 1,
+      "free": 1,
+      "members": [
+        {
+          "id": "env_staging",
+          "label": "staging-web",
+          "status": "locked",
+          "holder": "CI/CD 门禁 · n_api_exec",
+          "ttl": 720
+        },
+        {
+          "id": "env_perftest",
+          "label": "perftest-env",
+          "status": "free",
+          "holder": "",
+          "ttl": 0
+        }
+      ]
+    },
+    {
+      "id": "pool_cred",
+      "type": "凭据",
+      "name": "凭据资源池",
+      "total": 3,
+      "locked": 1,
+      "free": 2,
+      "members": [
+        {
+          "id": "cred_prod_ro",
+          "label": "生产只读 DB 凭据",
+          "status": "locked",
+          "holder": "数据一致性节点 · n_data_check",
+          "ttl": 300
+        },
+        {
+          "id": "cred_sandbox",
+          "label": "沙箱 API Key",
+          "status": "free",
+          "holder": "",
+          "ttl": 0
+        },
+        {
+          "id": "cred_ci",
+          "label": "CI Runner Token",
+          "status": "free",
+          "holder": "",
+          "ttl": 0
+        }
+      ]
+    },
+    {
+      "id": "pool_slot",
+      "type": "并发槽位",
+      "name": "并行执行槽位",
+      "total": 6,
+      "locked": 4,
+      "free": 2,
+      "members": [
+        {
+          "id": "slot_1",
+          "label": "槽位 1",
+          "status": "locked",
+          "holder": "并行分发 · 单元测试",
+          "ttl": 540
+        },
+        {
+          "id": "slot_2",
+          "label": "槽位 2",
+          "status": "locked",
+          "holder": "并行分发 · 接口测试",
+          "ttl": 480
+        },
+        {
+          "id": "slot_3",
+          "label": "槽位 3",
+          "status": "locked",
+          "holder": "并行分发 · 安全探测",
+          "ttl": 900
+        },
+        {
+          "id": "slot_4",
+          "label": "槽位 4",
+          "status": "locked",
+          "holder": "并行分发 · 性能负载",
+          "ttl": 600
+        },
+        {
+          "id": "slot_5",
+          "label": "槽位 5",
+          "status": "free",
+          "holder": "",
+          "ttl": 0
+        },
+        {
+          "id": "slot_6",
+          "label": "槽位 6",
+          "status": "free",
+          "holder": "",
+          "ttl": 0
+        }
+      ]
+    },
+    {
+      "id": "pool_95b430",
+      "type": "数据源",
+      "name": "V10 测试数据源池",
+      "total": 0,
+      "locked": 0,
+      "free": 0,
+      "members": []
+    }
+  ],
+  "locks": [
+    {
+      "id": "lock_dev_a",
+      "resourceId": "dev_a",
+      "poolId": "pool_device",
+      "mode": "独占锁",
+      "holder": "移动端多端回归 · n_exec_a",
+      "acquiredAt": "2026-10-26 15:32",
+      "ttl": 180,
+      "autoRelease": true,
+      "status": "free",
+      "releasedAt": "2026-10-27 11:26:28",
+      "releasedBy": "平台管理员"
+    },
+    {
+      "id": "lock_env_staging",
+      "resourceId": "env_staging",
+      "poolId": "pool_env",
+      "mode": "独占锁",
+      "holder": "CI/CD 门禁 · n_api_exec",
+      "acquiredAt": "2026-10-26 16:05",
+      "ttl": 720,
+      "autoRelease": true,
+      "status": "locked"
+    },
+    {
+      "id": "lock_slot_shared",
+      "resourceId": "slot_5",
+      "poolId": "pool_slot",
+      "mode": "共享锁",
+      "holder": "探索任务 · n_browser_explore",
+      "acquiredAt": "2026-10-26 16:40",
+      "ttl": 300,
+      "autoRelease": true,
+      "status": "locked"
+    },
+    {
+      "id": "lock_cred_prod",
+      "resourceId": "cred_prod_ro",
+      "poolId": "pool_cred",
+      "mode": "独占锁",
+      "holder": "数据一致性节点 · n_data_check",
+      "acquiredAt": "2026-10-26 14:10",
+      "ttl": 300,
+      "autoRelease": false,
+      "status": "locked"
+    },
+    {
+      "id": "lock_53c048",
+      "resourceId": "dev_d",
+      "poolId": "",
+      "mode": "独占锁",
+      "holder": "V10 测试 · n_v10",
+      "acquiredAt": "2026-10-27 11:26:28",
+      "ttl": 600,
+      "autoRelease": true,
+      "status": "locked"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_001",
+      "ts": "2026-10-26 15:32",
+      "resourceId": "dev_a",
+      "action": "获取",
+      "actor": "移动端多端回归 · n_exec_a",
+      "detail": "获取独占锁（TTL 180s，自动释放）"
+    },
+    {
+      "id": "evt_002",
+      "ts": "2026-10-26 15:34",
+      "resourceId": "dev_a",
+      "action": "持有",
+      "actor": "移动端多端回归 · n_exec_b",
+      "detail": "冲突：设备 A 已占用，按排队等待策略挂起"
+    },
+    {
+      "id": "evt_003",
+      "ts": "2026-10-26 16:05",
+      "resourceId": "env_staging",
+      "action": "获取",
+      "actor": "CI/CD 门禁 · n_api_exec",
+      "detail": "获取独占锁（TTL 720s）"
+    },
+    {
+      "id": "evt_004",
+      "ts": "2026-10-26 16:41",
+      "resourceId": "slot_5",
+      "action": "获取",
+      "actor": "探索任务 · n_browser_explore",
+      "detail": "获取共享锁，允许并发读取"
+    },
+    {
+      "id": "evt_005",
+      "ts": "2026-10-26 14:12",
+      "resourceId": "cred_prod_ro",
+      "action": "释放",
+      "actor": "数据一致性节点 · n_data_check",
+      "detail": "节点完成，主动释放独占锁"
+    },
+    {
+      "id": "evt_6508e2",
+      "ts": "2026-10-27 11:26:28",
+      "resourceId": "dev_d",
+      "action": "获取",
+      "actor": "V10 测试 · n_v10",
+      "detail": "获取 独占锁（TTL 600s）"
+    },
+    {
+      "id": "evt_f7a33b",
+      "ts": "2026-10-27 11:26:28",
+      "resourceId": "dev_a",
+      "action": "释放",
+      "actor": "平台管理员",
+      "detail": "主动释放锁"
+    }
+  ],
+  "queue": [
+    {
+      "id": "q_001",
+      "ts": "2026-10-26 15:34",
+      "resourceId": "dev_a",
+      "requester": "移动端多端回归 · n_exec_b",
+      "policy": "排队等待",
+      "waitSec": 180
+    }
+  ]
+}

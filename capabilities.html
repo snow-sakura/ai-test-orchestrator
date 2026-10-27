@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>开放能力服务控制台 · 智测编排</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>
+  .mono { font-family: var(--mono); font-size: 11.5px; }
+  .cap-name { font-weight: 500; }
+  .cap-desc { font-size: 10.5px; color: var(--tx-4); margin-top: 1px; }
+  .apr { border: 1px solid var(--line-1); border-radius: var(--r-md); background: var(--bg-2); padding: 10px 12px; }
+  .apr + .apr { margin-top: 9px; }
+  .apr-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .apr-h .t { font-family: var(--mono); font-size: 10.5px; color: var(--tx-4); margin-left: auto; }
+  .apr-req { margin-top: 6px; font-family: var(--mono); font-size: 11.5px; color: var(--tx-1); background: var(--bg-3); border: 1px solid var(--line-2); border-radius: var(--r-sm); padding: 6px 8px; word-break: break-all; }
+  .apr-f { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .apr-f .sp { flex: 1; }
+  .cfg-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line-1); }
+  .cfg-row:last-child { border-bottom: 0; }
+  .cfg-row .lb { color: var(--tx-3); width: 96px; flex: none; font-size: 11.5px; }
+  .cfg-row .vv { flex: 1; min-width: 0; font-family: var(--mono); font-size: 11.5px; word-break: break-all; }
+  .queue-empty { padding: 34px 10px; text-align: center; color: var(--tx-3); font-size: 12px; }
+  .queue-empty .ico { font-size: 28px; opacity: .4; display: block; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <a class="brand" href="dashboard.html">
+    <div class="brand-mark">智</div>
+    <div class="brand-text"><b>智测编排</b><span>AI TEST ORCHESTRATOR</span></div>
+  </a>
+  <header class="topbar"></header>
+  <aside class="side"></aside>
+  <main class="main"><div class="page">
+
+    <div class="page-head">
+      <div>
+        <h2>开放能力服务控制台</h2>
+        <p>把平台的工作流、节点与平台能力对外暴露为可调度服务，统一鉴权、授权与审批策略。</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnDoc">接入文档</button>
+        <button class="btn primary" id="btnPublish">＋ 发布新能力</button>
+      </div>
+    </div>
+
+    <div class="grid grid-4" id="statRow"></div>
+
+    <div class="notice info" style="margin:14px 0">
+      <span class="ico">ⓘ</span>
+      <div><b>调用审计：</b>外部调用与内部运行共享同一份审计账本。每一次外部请求的鉴权结果、授权范围命中情况与后续动作都会写入账本，可在 <a href="audit.html">审计与证据账本</a> 中逐条追溯。</div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar" style="margin:0;border:0;border-bottom:1px solid var(--line-1);border-radius:0">
+        <div class="search"><input class="input" id="cSearch" placeholder="搜索能力名 / 授权范围"></div>
+        <select class="select" id="cType" style="width:130px">
+          <option value="">全部类型</option>
+          <option value="工作流">工作流</option>
+          <option value="节点">节点</option>
+          <option value="平台能力">平台能力</option>
+        </select>
+        <select class="select" id="cVis" style="width:130px">
+          <option value="">全部可见性</option>
+          <option value="public">public</option>
+          <option value="private">private</option>
+        </select>
+        <div class="sep"></div>
+        <span class="tag" id="cCount">—</span>
+        <div class="topbar-spacer"></div>
+        <button class="btn sm" id="cReset">重置筛选</button>
+      </div>
+      <div style="overflow:auto;max-height:calc(100vh - 420px)">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>能力名称</th>
+              <th>类型</th>
+              <th>可见性</th>
+              <th>鉴权方式</th>
+              <th>授权范围</th>
+              <th data-sort>调用次数</th>
+              <th>最近调用</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody id="capBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:14px">
+      <div class="card">
+        <div class="card-head">
+          <h3>待审批队列</h3>
+          <span class="sub">执行类与写入类外部调用默认入队</span>
+          <span class="tag warn" id="aprCount" style="margin-left:auto">0</span>
+        </div>
+        <div class="card-body" id="queueBox"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>接入配置</h3>
+          <span class="sub">外部调度方凭此接入</span>
+        </div>
+        <div class="card-body" id="cfgBox"></div>
+      </div>
+    </div>
+
+  </div></main>
+</div>
+<script src="assets/js/app.js"></script>
+<script>
+/* ================= 本地状态 ================= */
+const C = {
+  caps: CAPABILITIES.map(c => Object.assign({}, c)),
+  pending: [],
+  rejected: 0
+};
+
+/* 能力与平台对象的绑定关系（用于协议示例与跳转） */
+const CAP_BIND = {
+  cap_1: { kind: 'wf', ref: 'wf_cicd', path: '/api/v1/workflows/wf_cicd/run' },
+  cap_2: { kind: 'node', ref: 'browser_use', path: '/api/v1/nodes/browser_use/execute' },
+  cap_3: { kind: 'node', ref: 'defect_archive', path: '/api/v1/nodes/defect_archive/execute' },
+  cap_4: { kind: 'asset', ref: 'AST-1038', path: '/api/v1/assets/query' },
+  cap_5: { kind: 'node', ref: 'perf_test', path: '/api/v1/nodes/perf_test/execute' }
+};
+
+/* 待审批队列：由 AUDIT 外部调用/工具调用/任务提交条目 + CAPABILITIES 派生 */
+const PENDING_SEED = [
+  { id: 'APR-1', evt: 'EVT-88209', cap: 'cap_1', caller: '外部 Agent · dev-bot', req: 'POST /api/v1/workflows/wf_cicd/run · branch=feature/order-refactor', risk: '将触发完整门禁流水线，并消耗当前账号的额度', time: '2026-10-20 16:38' },
+  { id: 'APR-2', evt: 'EVT-88208', cap: 'cap_3', caller: '缺陷单归档节点 · wf_cicd', req: '写入缺陷单 JIRA-4471 · 标题「订单金额校验失败」', risk: '将写入外部缺陷系统 JIRA，外部成员可见', time: '2026-10-20 16:22' },
+  { id: 'APR-3', evt: 'EVT-88212', cap: 'cap_1', caller: '质量门禁节点 · wf_cicd', req: 'rule-engine.gate.evaluate · 覆盖 1 项低危安全发现', risk: '将改变门禁裁决结论，可能直接阻断流水线', time: '2026-10-20 16:41' },
+  { id: 'APR-4', evt: 'EVT-88206', cap: 'cap_5', caller: '外部 Agent · qa-bot', req: '提交压测任务 · 峰值 8k QPS · 集群 perf-01', risk: '将独占压测集群，可能挤占在跑的性能基线任务', time: '2026-10-20 15:52' },
+  { id: 'APR-5', evt: 'EVT-88211', cap: 'cap_3', caller: '外部 Agent · dev-bot', req: 'shell.exec 批量提交缺陷（12 条）', risk: '调用了白名单外的工具，运行时已拦截，需人工确认是否放行', time: '2026-10-20 16:40' }
+];
+
+/* ================= 工具 ================= */
+function capStatusTag(s) {
+  return s === 'active' ? '<span class="tag ok dot">已启用</span>' : '<span class="tag dot">已暂停</span>';
+}
+function capTypeTag(t) {
+  const m = { '工作流': 'brand', '节点': 'info', '平台能力': 'violet' };
+  return '<span class="tag ' + (m[t] || '') + '">' + esc(t) + '</span>';
+}
+function visTag(v) {
+  return v === 'public' ? '<span class="tag ok">public</span>' : '<span class="tag">private</span>';
+}
+function capPath(c) {
+  const b = CAP_BIND[c.id];
+  return b ? b.path : '/api/v1/capabilities/' + c.id + '/invoke';
+}
+function copyText(text, label) {
+  const done = () => toast(label + '已复制到剪贴板', 'ok');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  if (ok) done(); else toast('复制失败，请手动选中文本', 'warn');
+}
+
+/* ================= 统计卡 ================= */
+function renderStats() {
+  const on = C.caps.filter(c => c.status === 'active').length;
+  const calls = C.caps.reduce((s, c) => s + c.calls, 0);
+  const deniedAudit = AUDIT.filter(e => e.result === 'denied' || e.type === '白名单拒绝').length;
+  $('#statRow').innerHTML =
+    '<div class="stat"><div class="k">已暴露能力数</div><div class="v brand" id="stCap">0</div><div class="d">在线 ' + on + ' 个 · 暂停 ' + (C.caps.length - on) + ' 个</div></div>' +
+    '<div class="stat"><div class="k">累计外部调用</div><div class="v" id="stCalls">0</div><div class="d">全部已暴露能力合计</div></div>' +
+    '<div class="stat"><div class="k">待审批队列</div><div class="v warn" id="stPend">0</div><div class="d">执行类与写入类调用默认入队</div></div>' +
+    '<div class="stat"><div class="k">本月拒绝</div><div class="v err" id="stRej">0</div><div class="d">账本拒绝 ' + deniedAudit + ' 条 + 人工拒绝 ' + C.rejected + ' 条</div></div>';
+  animateNumber($('#stCap'), C.caps.length);
+  animateNumber($('#stCalls'), calls);
+  animateNumber($('#stPend'), C.pending.length);
+  animateNumber($('#stRej'), deniedAudit + C.rejected);
+  $('#aprCount').textContent = C.pending.length + ' 条待处理';
+}
+
+/* ================= 能力清单 ================= */
+function visibleCaps() {
+  const q = ($('#cSearch').value || '').trim().toLowerCase();
+  const t = $('#cType').value;
+  const v = $('#cVis').value;
+  return C.caps.filter(c => {
+    if (t && c.type !== t) return false;
+    if (v && c.vis !== v) return false;
+    if (q && (c.name + c.scope + c.desc).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+}
+function renderCaps() {
+  const rows = visibleCaps();
+  const tb = $('#capBody');
+  if (!rows.length) {
+    tb.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="ico">⌕</div><h4>没有匹配的能力</h4><p>调整筛选条件，或发布一个新的对外能力。</p></div></td></tr>';
+  } else {
+    tb.innerHTML = rows.map(c =>
+      '<tr class="clickable" data-id="' + c.id + '">' +
+        '<td><div class="cap-name">' + esc(c.name) + '</div><div class="cap-desc">' + esc(c.desc) + '</div></td>' +
+        '<td>' + capTypeTag(c.type) + '</td>' +
+        '<td>' + visTag(c.vis) + '</td>' +
+        '<td><span class="tag">' + esc(c.auth) + '</span></td>' +
+        '<td class="mono">' + esc(c.scope) + '</td>' +
+        '<td class="mono">' + num(c.calls) + '</td>' +
+        '<td class="mono" style="color:var(--tx-3)">' + esc(c.last) + '</td>' +
+        '<td>' + capStatusTag(c.status) + '</td>' +
+      '</tr>').join('');
+  }
+  $('#cCount').textContent = rows.length + ' / ' + C.caps.length + ' 个能力';
+  $$('#capBody tr[data-id]').forEach(tr => tr.addEventListener('click', () => openCapDrawer(tr.dataset.id)));
+}
+
+/* ================= 能力抽屉 ================= */
+function codeSample(c) {
+  const scopes = c.scope.split(',').map(s => '"' + s.trim() + '"').join(', ');
+  return 'POST ' + capPath(c) + '\n' +
+    'Authorization: Bearer sk-live-****3f92\n' +
+    'X-ZC-Timestamp: 2026-10-20T16:42:11+08:00\n' +
+    'X-ZC-Signature: HMAC-SHA256(timestamp + body)\n' +
+    '\n' +
+    '{\n' +
+    '  <span class="k">"capability"</span>: <span class="s">"' + esc(c.id) + '"</span>,\n' +
+    '  <span class="k">"name"</span>: <span class="s">"' + esc(c.name) + '"</span>,\n' +
+    '  <span class="k">"scope"</span>: [' + scopes + '],\n' +
+    '  <span class="k">"params"</span>: { <span class="k">"branch"</span>: <span class="s">"feature/order-refactor"</span> }\n' +
+    '}\n' +
+    '\n' +
+    '<span class="c">// 200 OK</span>\n' +
+    '{\n' +
+    '  <span class="k">"status"</span>: <span class="s">"accepted"</span>,\n' +
+    '  <span class="k">"run_id"</span>: <span class="s">"run_20261020_1642"</span>,\n' +
+    '  <span class="k">"gate"</span>: <span class="s">"有条件通过"</span>,\n' +
+    '  <span class="k">"evidence_refs"</span>: <span class="n">7</span>\n' +
+    '}';
+}
+function openCapDrawer(id) {
+  const c = C.caps.find(x => x.id === id);
+  if (!c) return;
+  const b = CAP_BIND[c.id] || null;
+  const exec = c.scope.indexOf('write') >= 0 || c.scope.indexOf('execute') >= 0 || c.scope.indexOf('run') >= 0;
+  const wf = b && b.kind === 'wf' ? WORKFLOWS.find(w => w.id === b.ref) : null;
+
+  const html =
+    '<div class="card-head"><h3>' + esc(c.name) + '</h3>' + capTypeTag(c.type) + visTag(c.vis) +
+      '<span class="tag" style="margin-left:auto">' + capStatusTag(c.status).replace(/<[^>]+>/g, '') + '</span></div>' +
+    '<div style="overflow:auto;padding:14px 15px">' +
+      '<div class="fm" style="display:flex;gap:10px;font-size:12px;padding:8px 0;border-bottom:1px solid var(--line-1)">' +
+        '<span style="color:var(--tx-3);width:84px;flex:none">能力描述</span><span style="flex:1">' + esc(c.desc) + '</span></div>' +
+      '<div class="fm" style="display:flex;gap:10px;font-size:12px;padding:8px 0;border-bottom:1px solid var(--line-1)">' +
+        '<span style="color:var(--tx-3);width:84px;flex:none">鉴权方式</span><span style="flex:1">' + esc(c.auth) + ' · 请求头签名 HMAC-SHA256</span></div>' +
+      '<div class="fm" style="display:flex;gap:10px;font-size:12px;padding:8px 0;border-bottom:1px solid var(--line-1)">' +
+        '<span style="color:var(--tx-3);width:84px;flex:none">授权范围</span><span class="mono" style="flex:1">' + esc(c.scope) + '</span></div>' +
+      '<div class="fm" style="display:flex;gap:10px;font-size:12px;padding:8px 0;border-bottom:1px solid var(--line-1)">' +
+        '<span style="color:var(--tx-3);width:84px;flex:none">调用统计</span><span class="mono" style="flex:1">' + num(c.calls) + ' 次 · 最近 ' + esc(c.last) + '</span></div>' +
+      (wf ? '<div class="fm" style="display:flex;gap:10px;font-size:12px;padding:8px 0;border-bottom:1px solid var(--line-1)">' +
+        '<span style="color:var(--tx-3);width:84px;flex:none">关联工作流</span><span style="flex:1">' +
+        '<a href="workflows.html?wf=' + wf.id + '">' + esc(wf.name) + '</a> · <a href="editor.html?wf=' + wf.id + '">在编排画布中打开</a></span></div>' : '') +
+
+      '<div style="margin:14px 0 6px;font-size:11.5px;color:var(--tx-3)">调用协议示例</div>' +
+      '<pre class="code">' + codeSample(c) + '</pre>' +
+
+      '<div style="margin:14px 0 6px;font-size:11.5px;color:var(--tx-3)">审批策略</div>' +
+      (exec
+        ? '<div class="notice warn"><span class="ico">!</span><div>该能力属于<b>执行类 / 写入类</b>操作，默认进入<a href="#apr">待审批队列</a>，需人工批准后方可放行；调用频次超过阈值时即使在授权范围内也会再次入队复核。</div></div>'
+        : '<div class="notice ok"><span class="ico">✓</span><div>该能力属于<b>只读类</b>操作，授权范围命中即可直接放行，无需进入待审批队列。</div></div>') +
+    '</div>' +
+    '<div class="modal-foot">' +
+      '<button class="btn" id="capClose">关闭</button>' +
+      '<button class="btn ' + (c.status === 'active' ? 'danger' : 'ok') + '" id="capToggle">' +
+        (c.status === 'active' ? '停用能力' : '启用能力') + '</button>' +
+    '</div>';
+
+  const dr = openDrawer(html, { wide: true });
+  $$('.x, [data-close]', dr.el).forEach(b => b.addEventListener('click', dr.close));
+  $('#capClose', dr.el).addEventListener('click', dr.close);
+  $('#capToggle', dr.el).addEventListener('click', function () {
+    c.status = c.status === 'active' ? 'paused' : 'active';
+    renderCaps(); renderStats();
+    toast((c.status === 'active' ? '能力已启用 · ' : '能力已停用 · ') + c.name, c.status === 'active' ? 'ok' : 'warn');
+    dr.close();
+  });
+}
+
+/* ================= 待审批队列 ================= */
+function renderQueue() {
+  const box = $('#queueBox');
+  if (!C.pending.length) {
+    box.innerHTML = '<div class="queue-empty"><span class="ico">✓</span>待审批队列已清空，所有外部调用均已处理完毕。</div>';
+  } else {
+    box.innerHTML = C.pending.map(p =>
+      '<div class="apr" data-id="' + p.id + '">' +
+        '<div class="apr-h"><span class="tag warn dot">待审批</span><b>' + esc(p.caller) + '</b>' +
+          '<span class="tag">' + esc(p.cap) + '</span><span class="t">' + esc(p.time) + '</span></div>' +
+        '<div class="apr-req">' + esc(p.req) + '</div>' +
+        '<div class="notice warn" style="margin:8px 0"><span class="ico">!</span><div>' + esc(p.risk) + '</div></div>' +
+        '<div class="apr-f">' +
+          '<a class="btn xs" href="audit.html?evt=' + esc(p.evt) + '">查看证据 ' + esc(p.evt) + '</a>' +
+          '<span class="sp"></span>' +
+          '<button class="btn xs ok" data-approve="' + p.id + '">批准</button>' +
+          '<button class="btn xs danger" data-reject="' + p.id + '">拒绝</button>' +
+        '</div>' +
+      '</div>').join('');
+  }
+  $$('#queueBox [data-approve]').forEach(b => b.addEventListener('click', () => approve(b.dataset.approve)));
+  $$('#queueBox [data-reject]').forEach(b => b.addEventListener('click', () => reject(b.dataset.reject)));
+}
+function approve(pid) {
+  const i = C.pending.findIndex(p => p.id === pid);
+  if (i < 0) return;
+  const p = C.pending[i];
+  C.pending.splice(i, 1);
+  renderQueue(); renderStats();
+  toast('已批准 · ' + p.id + ' · ' + p.evt + ' 已放行并记入审计账本', 'ok');
+}
+function reject(pid) {
+  const p = C.pending.find(x => x.id === pid);
+  if (!p) return;
+  const html =
+    '<div class="modal-head"><h3>拒绝外部调用</h3><span class="x" data-close>✕</span></div>' +
+    '<div class="modal-body">' +
+      '<div class="notice err"><span class="ico">!</span><div>拒绝后该调用不会执行，调用方将收到 <b>403 Forbidden</b>；拒绝理由会写入审计账本并对调用方可见。</div></div>' +
+      '<div class="field" style="margin-top:12px"><label>调用方</label><input class="input" value="' + esc(p.caller) + '" disabled></div>' +
+      '<div class="field"><label>请求内容</label><input class="input" value="' + esc(p.req) + '" disabled></div>' +
+      '<div class="field"><label>拒绝理由 <span class="req">*</span></label>' +
+        '<textarea class="textarea" id="rjReason" placeholder="例如：请求未包含变更单号，无法回溯审批依据"></textarea></div>' +
+    '</div>' +
+    '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn danger" id="rjGo">确认拒绝</button></div>';
+  const mo = openModal(html);
+  $('#rjGo', mo.el).addEventListener('click', function () {
+    const reason = $('#rjReason', mo.el).value.trim();
+    if (!reason) { toast('请填写拒绝理由', 'err'); $('#rjReason', mo.el).focus(); return; }
+    const i = C.pending.findIndex(x => x.id === pid);
+    if (i >= 0) C.pending.splice(i, 1);
+    C.rejected += 1;
+    renderQueue(); renderStats();
+    toast('已拒绝 · ' + p.id + ' · 理由已记入审计账本', 'warn');
+    mo.close();
+  });
+}
+
+/* ================= 接入配置 ================= */
+const ACCESS = [
+  { lb: 'API 端点', val: 'https://api.zhice-orchestrator.local/api/v1', copy: true },
+  { lb: '应用密钥', val: 'sk-live-****3f92', copy: true, hint: '仅展示前缀与后四位，明文不落前端' },
+  { lb: '回调地址', val: 'https://api.zhice-orchestrator.local/hooks/open/callback', copy: true },
+  { lb: '请求签名', val: 'HMAC-SHA256 · 头 X-ZC-Signature / X-ZC-Timestamp', copy: false },
+  { lb: '授权模式', val: 'Bearer Key（API Key）与 OAuth2 客户端凭证并存', copy: false }
+];
+function renderCfg() {
+  $('#cfgBox').innerHTML = ACCESS.map(a =>
+    '<div class="cfg-row"><span class="lb">' + esc(a.lb) + '</span><span class="vv">' + esc(a.val) +
+      (a.hint ? '<div style="font-family:var(--sans);font-size:10.5px;color:var(--tx-4);margin-top:2px">' + esc(a.hint) + '</div>' : '') +
+      '</span>' +
+      (a.copy ? '<button class="btn xs" data-copy="' + esc(a.val) + '" data-lb="' + esc(a.lb) + '">复制</button>' : '') +
+    '</div>').join('') +
+    '<div class="notice" style="margin-top:12px"><span class="ico">ⓘ</span><div>密钥仅在服务端解密使用，前端永远拿不到明文；如需轮换请在配置中心操作，轮换后旧密钥立即失效。</div></div>';
+  $$('#cfgBox [data-copy]').forEach(b => b.addEventListener('click', () => copyText(b.dataset.copy, b.dataset.lb + ' ')));
+}
+
+/* ================= 发布新能力 ================= */
+function openPublish() {
+  const html =
+    '<div class="modal-head"><h3>发布新能力</h3><span class="x" data-close>✕</span></div>' +
+    '<div class="modal-body">' +
+      '<div class="field-row">' +
+        '<div class="field"><label>能力类型</label><select class="select" id="pbType">' +
+          '<option value="工作流">工作流</option><option value="节点">节点</option><option value="平台能力">平台能力</option>' +
+        '</select></div>' +
+        '<div class="field"><label>绑定对象</label><select class="select" id="pbRef"></select></div>' +
+      '</div>' +
+      '<div class="field"><label>能力名称 <span class="req">*</span></label>' +
+        '<input class="input" id="pbName" placeholder="例如：核心接口巡检（只读）"></div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>可见性</label><select class="select" id="pbVis">' +
+          '<option value="private">private · 仅授权调用方</option><option value="public">public · 平台内公开</option>' +
+        '</select></div>' +
+        '<div class="field"><label>鉴权方式</label><select class="select" id="pbAuth">' +
+          '<option>Bearer Key</option><option>OAuth2</option><option>mTLS</option>' +
+        '</select></div>' +
+      '</div>' +
+      '<div class="field"><label>授权范围 <span class="req">*</span></label>' +
+        '<input class="input" id="pbScope" placeholder="例如：workflow:run, result:read" value="workflow:run, result:read">' +
+        '<div class="hint">多个范围以英文逗号分隔；包含 write / execute 的能力将默认进入待审批队列。</div></div>' +
+      '<div class="field"><label>能力说明</label><input class="input" id="pbDesc" placeholder="一句话描述该能力对外提供什么"></div>' +
+    '</div>' +
+    '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="pbGo">发布</button></div>';
+  const mo = openModal(html);
+  const typeSel = $('#pbType', mo.el);
+  const refSel = $('#pbRef', mo.el);
+  const fillRefs = function () {
+    if (typeSel.value === '工作流') {
+      refSel.innerHTML = WORKFLOWS.map(w => '<option value="' + esc(w.id) + '">' + esc(w.name) + '</option>').join('');
+    } else if (typeSel.value === '节点') {
+      refSel.innerHTML = Object.keys(CAT_META).map(cat =>
+        '<optgroup label="' + esc(CAT_META[cat].name) + '">' +
+        NODE_CATALOG[cat].nodes.map(n => '<option value="' + esc(n.id) + '">' + esc(n.name) + '</option>').join('') +
+        '</optgroup>').join('');
+    } else {
+      refSel.innerHTML = ASSETS.slice(0, 4).map(a => '<option value="' + esc(a.id) + '">' + esc(a.name) + '</option>').join('');
+    }
+  };
+  typeSel.addEventListener('change', fillRefs);
+  fillRefs();
+
+  $('#pbGo', mo.el).addEventListener('click', function () {
+    const name = $('#pbName', mo.el).value.trim();
+    const scope = $('#pbScope', mo.el).value.trim();
+    if (!name) { toast('请填写能力名称', 'err'); $('#pbName', mo.el).focus(); return; }
+    if (!scope) { toast('请填写授权范围', 'err'); return; }
+    const id = 'cap_new_' + (C.caps.length + 1);
+    const ref = refSel.value;
+    C.caps.push({
+      id: id, name: name, desc: $('#pbDesc', mo.el).value.trim() || '新建的对外调度能力',
+      type: typeSel.value, vis: $('#pbVis', mo.el).value, auth: $('#pbAuth', mo.el).value,
+      calls: 0, last: '—', status: 'active', scope: scope
+    });
+    CAP_BIND[id] = typeSel.value === '工作流'
+      ? { kind: 'wf', ref: ref, path: '/api/v1/workflows/' + ref + '/run' }
+      : typeSel.value === '节点'
+        ? { kind: 'node', ref: ref, path: '/api/v1/nodes/' + ref + '/execute' }
+        : { kind: 'asset', ref: ref, path: '/api/v1/assets/query' };
+    renderCaps(); renderStats();
+    toast('能力已发布 · ' + name + ' · 调用方可立即使用', 'ok');
+    mo.close();
+  });
+}
+
+/* ================= 初始化 ================= */
+renderShell('capabilities', {
+  title: '开放能力服务控制台',
+  sub: 'OPEN CAPABILITIES',
+  actions: '<button class="btn ghost" id="tbRefresh">↻ 刷新</button><button class="btn primary" id="tbPublish">＋ 发布新能力</button>'
+});
+$('#tbPublish').addEventListener('click', openPublish);
+$('#btnPublish').addEventListener('click', openPublish);
+$('#tbRefresh').addEventListener('click', () => { renderStats(); renderCaps(); renderQueue(); toast('能力清单已刷新', 'ok'); });
+$('#btnDoc').addEventListener('click', () => toast('接入文档已在新窗口打开 · v2 协议规范', 'info'));
+
+$('#cSearch').addEventListener('input', renderCaps);
+$('#cType').addEventListener('change', renderCaps);
+$('#cVis').addEventListener('change', renderCaps);
+$('#cReset').addEventListener('click', () => {
+  $('#cSearch').value = ''; $('#cType').value = ''; $('#cVis').value = '';
+  renderCaps(); toast('筛选条件已重置', 'info');
+});
+
+C.pending = PENDING_SEED.slice();
+renderStats();
+renderCaps();
+renderQueue();
+renderCfg();
+makeSortable($('#capBody').closest('table'));
+</script>
+</body>
+</html>

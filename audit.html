@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>审计与证据账本 · 智测编排</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>
+  .mono { font-family: var(--mono); font-size: 11.5px; }
+  .ledger-item { cursor: pointer; }
+  .ledger-item .hash { font-family: var(--mono); font-size: 10.5px; color: var(--tx-4); }
+  .ledger-item.deny { background: rgba(239, 68, 68, .07); box-shadow: inset 2px 0 0 var(--err-500); }
+  .ledger-item.deny:hover { background: rgba(239, 68, 68, .14); }
+  .ledger-item.hit { box-shadow: inset 2px 0 0 var(--brand-400); }
+  .ledger-item .evid { font-family: var(--mono); font-size: 10.5px; color: var(--tx-4); margin-left: auto; flex: none; }
+  .type-tag { flex: none; }
+  .chain { border: 1px solid var(--line-1); border-radius: var(--r-md); background: var(--bg-2); padding: 9px 11px; }
+  .chain-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 11.5px; }
+  .chain-row + .chain-row { border-top: 1px dashed var(--line-2); }
+  .chain-row .lb { color: var(--tx-3); flex: none; width: 58px; }
+  .chain-row .vv { color: var(--tx-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chain-row .btn { margin-left: auto; flex: none; }
+  .fm { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; padding: 8px 0; }
+  .fm + .fm { border-top: 1px solid var(--line-1); }
+  .fm .lb { color: var(--tx-3); width: 96px; flex: none; }
+  .fm .vv { flex: 1; min-width: 0; word-break: break-all; }
+  .dl-scroll { max-height: calc(100vh - 300px); overflow: auto; }
+  .audit-head { display: flex; align-items: center; gap: 10px; padding: 13px 15px; border-bottom: 1px solid var(--line-1); background: var(--bg-2); }
+  .audit-head h3 { margin: 0; font-size: 14px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="app">
+  <a class="brand" href="dashboard.html">
+    <div class="brand-mark">智</div>
+    <div class="brand-text"><b>智测编排</b><span>AI TEST ORCHESTRATOR</span></div>
+  </a>
+  <header class="topbar"></header>
+  <aside class="side"></aside>
+  <main class="main"><div class="page">
+
+    <div class="page-head">
+      <div>
+        <h2>审计与证据账本</h2>
+        <p>平台内一切关键动作的不可篡改记录：每条条目均携带证据哈希与链式前序哈希。</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnVerify">校验完整性</button>
+        <button class="btn primary" id="btnExportLedger">导出账本</button>
+      </div>
+    </div>
+
+    <div class="grid grid-5" id="statRow"></div>
+
+    <div class="notice" style="margin:14px 0">
+      <span class="ico">🛡</span>
+      <div><b>证据账本不可篡改，关键动作必须关联证据条目。</b>所有工作流运行、工具调用、审批、外部调用与资产认证均在此留痕；条目写入后只可追加，删除与修改在运行时被直接拒绝。白名单拒绝记录同样入账，运行时不可绕过。</div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar" style="margin:0;border:0;border-bottom:1px solid var(--line-1);border-radius:0">
+        <select class="select" id="fType" style="width:150px"></select>
+        <div class="sep"></div>
+        <div class="segmented" id="fRes">
+          <button class="active" data-res="all">全部</button>
+          <button data-res="success">成功</button>
+          <button data-res="denied">拒绝</button>
+          <button data-res="escalated">升级</button>
+        </div>
+        <div class="sep"></div>
+        <select class="select" id="fRange" style="width:130px">
+          <option value="all">全部时间</option>
+          <option value="m30">近 30 分钟</option>
+          <option value="h1">近 1 小时</option>
+          <option value="h3">近 3 小时</option>
+          <option value="today">今日</option>
+        </select>
+        <div class="search"><input class="input" id="fSearch" placeholder="搜索条目 / 主体 / 目标 / 哈希"></div>
+        <div class="sep"></div>
+        <span class="tag" id="fCount">—</span>
+        <div class="topbar-spacer"></div>
+        <button class="btn sm" id="fReset">重置筛选</button>
+      </div>
+
+      <div class="dl-scroll">
+        <div class="stream" id="ledger"></div>
+      </div>
+    </div>
+
+  </div></main>
+</div>
+<script src="assets/js/app.js"></script>
+<script>
+/* ================= 本地状态 ================= */
+const A = { list: AUDIT.slice(), type: '', res: 'all', range: 'all', q: '', hit: '' };
+
+/* ================= 工具 ================= */
+const TYPE_TAG = {
+  '工作流运行': 'brand', '工具调用': 'info', '白名单拒绝': 'err', '人工审批': 'violet',
+  '外部调用': 'brand', '缺陷归档': 'warn', '裁决升级': 'warn', '任务提交': 'info',
+  '资源锁': 'info', '资产认证': 'violet'
+};
+const RES_GROUP = {
+  success: ['success', 'approved', 'acquired'],
+  denied: ['denied', 'blocked'],
+  escalated: ['escalated']
+};
+const RES_CLS = { success: 'ok', approved: 'ok', acquired: 'info', denied: 'err', blocked: 'err', escalated: 'warn' };
+
+function typeTag(t) { return '<span class="tag ' + (TYPE_TAG[t] || '') + ' type-tag">' + esc(t) + '</span>'; }
+function resTag(r) { return '<span class="tag ' + (RES_CLS[r] || '') + ' dot">' + esc(r) + '</span>'; }
+function resClass(r) { return RES_CLS[r] || 'info'; }
+
+/* 确定性签名（仅用于原型展示，非真实密钥材料） */
+function sigOf(id) {
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < id.length; i++) {
+    const c = id.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+    h2 = Math.imul(h2 + c, 0x85ebca6b) >>> 0;
+  }
+  const hex = n => (n >>> 0).toString(16).padStart(8, '0');
+  return 'sig_' + hex(h1) + hex(h2);
+}
+function relatedRun(e) {
+  if (e.type === '工作流运行') {
+    const nm = e.target.split(' #')[0];
+    return RUNS.find(r => r.wfName === nm) || null;
+  }
+  if (e.target.indexOf('wf_cicd') >= 0) return RUNS.find(r => r.wf === 'wf_cicd') || null;
+  if (e.detail.indexOf('TSK-9F29') >= 0) return RUNS.find(r => r.wf === 'wf_sec') || null;
+  if (e.type === '缺陷归档') return RUNS.find(r => r.wf === 'wf_cicd') || null;
+  if (e.type === '资源锁') return RUNS.find(r => r.wf === 'wf_mobile') || null;
+  if (e.type === '资产认证') return RUNS.find(r => r.wf === 'wf_design') || null;
+  return null;
+}
+const NODE_BY_TYPE = {
+  '工作流运行': 'start', '工具调用': 'quality_gate', '白名单拒绝': 'ui_explore', '人工审批': 'approval',
+  '外部调用': 'mcp_call', '缺陷归档': 'defect_archive', '裁决升级': 'risk_rating', '任务提交': 'async_task',
+  '资源锁': 'async_task', '资产认证': 'asset_certify'
+};
+function relatedNode(e) {
+  const hit = Object.keys(ALL_NODES).find(id => ALL_NODES[id].name && (e.target.indexOf(ALL_NODES[id].name) >= 0 || e.detail.indexOf(ALL_NODES[id].name) >= 0));
+  return hit || NODE_BY_TYPE[e.type] || null;
+}
+function relatedTask(e) {
+  const m = e.target.match(/TSK-[0-9A-F]{4}/);
+  if (m) return m[0];
+  if (e.type === '任务提交') return 'TSK-9F29';
+  return null;
+}
+function relatedAsset(e) {
+  const m = e.target.match(/AST-[0-9]{4}/);
+  return m ? m[0] : null;
+}
+
+/* ================= 统计卡 ================= */
+function renderStats() {
+  const c = t => A.list.filter(e => e.type === t).length;
+  const cards = [
+    { k: '账本条目总数', v: A.list.length, d: '全部类型 · 含链式哈希', cls: 'brand' },
+    { k: '工具调用', v: c('工具调用'), d: '节点侧工具与规则引擎调用', cls: '' },
+    { k: '白名单拒绝', v: c('白名单拒绝'), d: '运行时强制拦截 · 不可绕过', cls: 'err' },
+    { k: '人工审批', v: c('人工审批'), d: '人工审批门与计划确认门', cls: 'warn' },
+    { k: '外部调用', v: c('外部调用'), d: '与内部运行共享同一账本', cls: 'info' }
+  ];
+  $('#statRow').innerHTML = cards.map(x =>
+    '<div class="stat"><div class="k">' + x.k + '</div><div class="v ' + x.cls + '">' + x.v + '</div><div class="d">' + x.d + '</div></div>').join('');
+}
+
+/* ================= 过滤与渲染 ================= */
+function filtered() {
+  const now = new Date('2026-10-20T17:00:00');
+  const q = A.q.toLowerCase();
+  return A.list.filter(e => {
+    if (A.type && e.type !== A.type) return false;
+    if (A.res !== 'all') {
+      const g = RES_GROUP[A.res] || [];
+      if (g.indexOf(e.result) < 0) return false;
+    }
+    if (A.range !== 'all') {
+      const diff = (now - new Date(e.ts.replace(' ', 'T'))) / 3600000;
+      if (A.range === 'm30' && diff > 0.5) return false;
+      if (A.range === 'h1' && diff > 1) return false;
+      if (A.range === 'h3' && diff > 3) return false;
+      if (A.range === 'today' && e.ts.slice(0, 10) !== '2026-10-20') return false;
+    }
+    if (q && (e.id + e.type + e.actor + e.target + e.detail + e.hash).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+}
+function renderLedger() {
+  const rows = filtered();
+  const box = $('#ledger');
+  if (!rows.length) {
+    box.innerHTML = '<div class="empty"><div class="ico">⌕</div><h4>没有匹配的账本条目</h4><p>请调整类型、结果或时间范围筛选条件。</p></div>';
+  } else {
+    box.innerHTML = rows.map(e => {
+      const deny = e.type === '白名单拒绝' ? 'deny' : '';
+      const hit = e.id === A.hit ? 'hit' : '';
+      return '<div class="stream-item ledger-item ' + resClass(e.result) + ' ' + deny + ' ' + hit + '" data-id="' + e.id + '">' +
+        '<span class="dot"></span>' +
+        '<div class="t">' + esc(e.ts.slice(11)) + '</div>' +
+        '<div class="b">' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+            typeTag(e.type) +
+            '<b>' + esc(e.actor) + '</b>' +
+            '<span style="color:var(--tx-2)">' + esc(e.target) + '</span>' +
+            resTag(e.result) +
+            '<span class="evid">' + esc(e.hash) + '</span>' +
+          '</div>' +
+          '<div class="m" style="margin-top:2px">' + esc(e.detail) +
+            (deny ? ' <span class="tag err" style="margin-left:4px">运行时不可绕过</span>' : '') + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+  $('#fCount').textContent = rows.length + ' / ' + A.list.length + ' 条';
+  $$('#ledger .ledger-item').forEach(it => it.addEventListener('click', () => openAuditDrawer(it.dataset.id)));
+}
+
+/* ================= 详情抽屉 ================= */
+function drawerHTML(e) {
+  const idx = A.list.findIndex(x => x.id === e.id);
+  const prev = A.list[idx - 1] || null;
+  const next = A.list[idx + 1] || null;
+  const run = relatedRun(e);
+  const node = relatedNode(e);
+  const task = relatedTask(e);
+  const asset = relatedAsset(e);
+  const deny = e.type === '白名单拒绝';
+
+  const chainRow = (label, item, dir) => {
+    if (!item) return '<div class="chain-row"><span class="lb">' + label + '</span><span class="vv" style="color:var(--tx-4)">— 无 —</span></div>';
+    return '<div class="chain-row"><span class="lb">' + label + '</span>' +
+      '<span class="vv mono">' + esc(item.id) + ' · ' + esc(item.hash) + '</span>' +
+      '<button class="btn xs" data-goto="' + item.id + '">' + (dir === 'prev' ? '查看上一条' : '查看下一条') + '</button></div>';
+  };
+
+  return '<div class="audit-head"><h3>' + esc(e.id) + '</h3>' + typeTag(e.type) + resTag(e.result) +
+      '<span class="tag mono" style="margin-left:auto">' + esc(e.ts) + '</span></div>' +
+    '<div style="overflow:auto;padding:14px 15px">' +
+      (deny ? '<div class="notice err" style="margin-bottom:12px"><span class="ico">!</span><div><b>运行时不可绕过。</b>该调用因不在白名单内被运行时强制拦截，节点重试、参数改写与人工介入均无法跳过；本条目已同步写入外部调度审计。</div></div>' : '') +
+
+      '<div class="fm"><span class="lb">执行主体</span><span class="vv">' + esc(e.actor) + '</span></div>' +
+      '<div class="fm"><span class="lb">目标对象</span><span class="vv">' + esc(e.target) + '</span></div>' +
+      '<div class="fm"><span class="lb">详情</span><span class="vv">' + esc(e.detail) + '</span></div>' +
+      '<div class="fm"><span class="lb">证据哈希</span><span class="vv mono">' + esc(e.hash) + '</span></div>' +
+      '<div class="fm"><span class="lb">链式前序</span><span class="vv mono">' + (prev ? esc(prev.hash) : '0x0000…0000（账本首条）') + '</span></div>' +
+      '<div class="fm"><span class="lb">时间戳</span><span class="vv mono">' + esc(e.ts) + ' (UTC+8)</span></div>' +
+      '<div class="fm"><span class="lb">条目签名</span><span class="vv mono">' + sigOf(e.id) + '</span></div>' +
+      '<div class="fm"><span class="lb">关联运行</span><span class="vv mono">' +
+        (run ? '<a href="runs.html?run=' + run.id + '">' + esc(run.id) + '</a> · ' + esc(run.wfName) + ' ' + esc(run.ver) : '—') + '</span></div>' +
+      '<div class="fm"><span class="lb">关联节点</span><span class="vv mono">' +
+        (node ? esc(node) + ' · ' + esc((ALL_NODES[node] || {}).name || '') +
+          (run ? ' <a href="editor.html?wf=' + run.wf + '">在编排画布中查看</a>' : '') : '—') + '</span></div>' +
+      '<div class="fm"><span class="lb">关联任务</span><span class="vv mono">' +
+        (task ? '<a href="tasks.html?task=' + task + '">' + task + '</a>' : '—') + '</span></div>' +
+      '<div class="fm"><span class="lb">关联资产</span><span class="vv mono">' +
+        (asset ? '<a href="assets.html?asset=' + asset + '">' + asset + '</a>' : '—') + '</span></div>' +
+      '<div class="fm"><span class="lb">受影响范围</span><span class="vv">对象 <b>' + esc(e.target) + '</b> 及其所属运行上下文；影响结果已同步至下游质量裁决与合规视图。</span></div>' +
+
+      '<div style="margin:14px 0 6px;font-size:11.5px;color:var(--tx-3)">关联证据链</div>' +
+      '<div class="chain">' +
+        chainRow('前序条目', prev, 'prev') +
+        chainRow('当前条目', { id: e.id, hash: e.hash }, 'cur').replace(/<button[\s\S]*?<\/button>/, '') +
+        chainRow('后序条目', next, 'next') +
+      '</div>' +
+    '</div>' +
+    '<div class="modal-foot">' +
+      '<button class="btn" id="aClose">关闭</button>' +
+      '<button class="btn" id="aExport">导出证据包</button>' +
+    '</div>';
+}
+
+function openAuditDrawer(id) {
+  const e = A.list.find(x => x.id === id);
+  if (!e) return;
+  A.hit = id;
+  const dr = openDrawer(drawerHTML(e), { wide: true });
+  bindDrawer(dr, e);
+  renderLedger();
+}
+function bindDrawer(dr, e) {
+  $$('.x, [data-close]', dr.el).forEach(b => b.addEventListener('click', dr.close));
+  const close = $('#aClose', dr.el);
+  if (close) close.addEventListener('click', dr.close);
+  const ex = $('#aExport', dr.el);
+  if (ex) ex.addEventListener('click', () => {
+    toast('合规导出包已生成 · ' + e.id + ' · 含证据元数据与前序链', 'ok');
+  });
+  $$('[data-goto]', dr.el).forEach(b => b.addEventListener('click', () => {
+    const t = A.list.find(x => x.id === b.dataset.goto);
+    if (!t) return;
+    dr.el.innerHTML = drawerHTML(t);
+    bindDrawer(dr, t);
+    A.hit = t.id;
+    renderLedger();
+  }));
+}
+
+/* ================= 导出账本 ================= */
+function openExport() {
+  const html =
+    '<div class="modal-head"><h3>导出审计账本</h3><span class="x" data-close>✕</span></div>' +
+    '<div class="modal-body">' +
+      '<div class="field"><label>导出格式</label>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<label class="tag" style="height:28px;padding:0 10px;cursor:pointer"><input type="radio" name="fmt" value="JSON" checked style="margin-right:5px">JSON</label>' +
+          '<label class="tag" style="height:28px;padding:0 10px;cursor:pointer"><input type="radio" name="fmt" value="CSV" style="margin-right:5px">CSV</label>' +
+          '<label class="tag" style="height:28px;padding:0 10px;cursor:pointer"><input type="radio" name="fmt" value="PDF" style="margin-right:5px">PDF</label>' +
+        '</div></div>' +
+      '<div class="field"><label>导出范围</label><select class="select" id="exScope">' +
+        '<option value="all">全部账本条目（' + A.list.length + ' 条）</option>' +
+        '<option value="filtered">仅当前筛选结果（' + filtered().length + ' 条）</option>' +
+        '</select></div>' +
+      '<div class="field"><label class="req" style="display:flex;gap:7px;align-items:center;cursor:pointer">' +
+        '<input type="checkbox" id="exChain" checked style="width:auto;height:auto">包含哈希链与签名校验信息</label></div>' +
+      '<div class="notice"><span class="ico">ⓘ</span><div>导出文件将记录本次导出的发起人、时间与筛选条件，作为新的账本条目追加。</div></div>' +
+    '</div>' +
+    '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="exGo">生成导出</button></div>';
+  const mo = openModal(html);
+  $('#exGo', mo.el).addEventListener('click', function () {
+    const fmt = ($$('input[name="fmt"]', mo.el).filter(r => r.checked)[0] || {}).value || 'JSON';
+    const scope = $('#exScope', mo.el).value;
+    const n = scope === 'filtered' ? filtered().length : A.list.length;
+    toast('账本导出已生成 · ' + fmt + ' · ' + n + ' 条记录', 'ok');
+    mo.close();
+  });
+}
+
+/* ================= 初始化 ================= */
+renderShell('audit', {
+  title: '审计与证据账本',
+  sub: 'AUDIT LEDGER',
+  actions: '<button class="btn ghost" id="tbRefresh">↻ 刷新</button><button class="btn primary" id="tbExport">导出账本</button>'
+});
+$('#tbExport').addEventListener('click', openExport);
+$('#btnExportLedger').addEventListener('click', openExport);
+$('#tbRefresh').addEventListener('click', () => { renderStats(); renderLedger(); toast('账本已刷新至最新条目', 'ok'); });
+$('#btnVerify').addEventListener('click', () => {
+  const btn = $('#btnVerify');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> 校验中…';
+  setTimeout(() => {
+    btn.disabled = false; btn.textContent = '校验完整性';
+    toast('完整性校验通过 · ' + A.list.length + ' 条条目哈希链连续无断裂', 'ok');
+  }, 1000);
+});
+
+$('#fType').innerHTML = '<option value="">全部类型</option>' +
+  Array.from(new Set(A.list.map(e => e.type))).map(t => '<option>' + esc(t) + '</option>').join('');
+$('#fType').addEventListener('change', e => { A.type = e.target.value; renderLedger(); });
+$('#fRes').addEventListener('click', e => {
+  const b = e.target.closest('button[data-res]');
+  if (!b) return;
+  $$('#fRes button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  A.res = b.dataset.res;
+  renderLedger();
+});
+$('#fRange').addEventListener('change', e => { A.range = e.target.value; renderLedger(); });
+$('#fSearch').addEventListener('input', e => { A.q = e.target.value; renderLedger(); });
+$('#fReset').addEventListener('click', () => {
+  A.type = ''; A.res = 'all'; A.range = 'all'; A.q = '';
+  $('#fType').value = ''; $('#fRange').value = ''; $('#fSearch').value = '';
+  $$('#fRes button').forEach((x, i) => x.classList.toggle('active', i === 0));
+  renderLedger();
+  toast('筛选条件已重置', 'info');
+});
+
+renderStats();
+renderLedger();
+
+/* URL 参数定位：audit.html?evt=EVT-88213 */
+const qs = new URLSearchParams(location.search);
+if (qs.get('evt')) {
+  const id = qs.get('evt');
+  const e = A.list.find(x => x.id === id);
+  if (e) {
+    A.hit = id;
+    renderLedger();
+    setTimeout(() => {
+      openAuditDrawer(id);
+      const node = $('.ledger-item[data-id="' + id + '"]');
+      if (node) node.scrollIntoView({ block: 'center' });
+    }, 140);
+  } else {
+    toast('未找到账本条目 ' + id, 'err');
+  }
+}
+</script>
+</body>
+</html>

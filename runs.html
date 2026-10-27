@@ -1,0 +1,622 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>执行追踪 · 智测编排</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>
+  /* 本页专属：主从布局 / 运行详情 */
+  .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.06fr);gap:14px;align-items:start}
+  @media (max-width:1440px){.split{grid-template-columns:1fr}}
+  .list-scroll{max-height:calc(100vh - 300px);overflow:auto}
+  .table tbody tr.sel{background:rgba(99,102,241,.13)}
+  .table tbody tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--brand-500)}
+  .meta-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+  .meta-grid .m{background:var(--bg-2);border:1px solid var(--line-1);border-radius:var(--r-md);padding:7px 10px;min-width:0}
+  .meta-grid .k{font-size:10.5px;color:var(--tx-3);letter-spacing:.3px}
+  .meta-grid .v{font-size:12.5px;font-weight:600;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sec-title{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;color:var(--tx-2);margin:16px 0 8px;letter-spacing:.4px}
+  .sec-title::after{content:'';flex:1;height:1px;background:var(--line-1)}
+  /* 执行面板折叠块 */
+  details.exec{border:1px solid var(--line-1);border-radius:var(--r-md);background:var(--bg-2);margin-bottom:8px;overflow:hidden}
+  details.exec[open]{border-color:var(--line-2)}
+  details.exec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;padding:8px 11px;font-size:12.5px}
+  details.exec>summary::-webkit-details-marker{display:none}
+  details.exec>summary:hover{background:var(--bg-3)}
+  details.exec .ex-dot{width:8px;height:8px;border-radius:50%;background:var(--line-3);flex:none}
+  details.exec .ex-dot.ok{background:var(--ok-500)} details.exec .ex-dot.err{background:var(--err-500)}
+  details.exec .ex-dot.run{background:var(--brand-500);animation:pulse 1.4s infinite}
+  details.exec .ex-dot.warn{background:var(--warn-500)}
+  details.exec .ex-name{font-weight:600;white-space:nowrap}
+  details.exec .ex-meta{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--tx-3);white-space:nowrap}
+  details.exec .ex-caret{color:var(--tx-4);font-size:10px;transition:transform .18s var(--ease)}
+  details.exec[open] .ex-caret{transform:rotate(90deg)}
+  .ex-body{padding:2px 11px 12px;border-top:1px solid var(--line-1);background:var(--bg-1)}
+  .ex-body .lbl{font-size:10.5px;color:var(--tx-3);letter-spacing:.4px;margin:10px 0 4px;display:flex;gap:6px;align-items:center}
+  .ex-body .lbl b{color:var(--tx-2);font-weight:600}
+  .ex-body .code{white-space:pre-wrap;font-size:11px;max-height:210px;overflow:auto}
+  .ex-kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}
+  .ex-kv .k{background:var(--bg-2);border:1px solid var(--line-1);border-radius:var(--r-sm);padding:6px 8px}
+  .ex-kv .k .kk{font-size:10px;color:var(--tx-3)}
+  .ex-kv .k .vv{font-family:var(--mono);font-size:12px;font-weight:600}
+  .ev-refs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .ev-refs a,.ev-refs span{font-size:10.5px}
+  /* 门禁裁决 */
+  .gate-wrap{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px}
+  @media (max-width:1500px){.gate-wrap{grid-template-columns:1fr}}
+  .gate-box{border:1px solid var(--line-1);border-radius:var(--r-md);background:var(--bg-2);padding:12px}
+  .gate-box .g-lbl{font-size:10.5px;color:var(--tx-3);letter-spacing:.5px;display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  .gate-verdict{font-size:19px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:9px;margin-bottom:4px}
+  .gate-verdict.pass{color:var(--ok-400)} .gate-verdict.cond{color:var(--warn-400)} .gate-verdict.block{color:var(--err-400)} .gate-verdict.wait{color:var(--tx-2)}
+  .gate-table td,.gate-table th{padding:6px 9px;font-size:11.5px}
+  .gate-narr{font-size:12px;line-height:1.75;color:var(--tx-2)}
+  .blockers li{margin-bottom:6px;font-size:11.5px;color:var(--tx-2)}
+  /* 右侧证据侧入口 */
+  .rail{position:fixed;right:0;top:calc(var(--topbar-h) + 110px);z-index:70;display:flex;flex-direction:column;gap:6px}
+  .rail button{writing-mode:vertical-rl;text-orientation:mixed;background:var(--bg-2);border:1px solid var(--line-2);border-right:none;border-radius:var(--r-md) 0 0 var(--r-md);padding:14px 7px;color:var(--tx-2);font-size:11px;font-family:inherit;cursor:pointer;display:flex;gap:8px;align-items:center;letter-spacing:1px}
+  .rail button:hover{background:var(--bg-3);color:var(--tx-1)}
+  .rail button b{color:var(--brand-400);font-size:10.5px}
+</style>
+</head><body>
+<div class="app">
+  <a class="brand" href="dashboard.html">
+    <div class="brand-mark">智</div>
+    <div class="brand-text"><b>智测编排</b><span>AI TEST ORCHESTRATOR</span></div>
+  </a>
+  <header class="topbar"></header>
+  <aside class="side"></aside>
+  <main class="main"><div class="page">
+
+    <!-- KPI -->
+    <div class="grid grid-5" style="margin-bottom:14px">
+      <div class="stat"><div class="k">今日运行数</div><div class="v" id="kRuns">0</div><div class="d" id="kRunsD">—</div></div>
+      <div class="stat"><div class="k">通过率</div><div class="v ok" id="kPass">0</div><div class="d" id="kPassD">—</div></div>
+      <div class="stat"><div class="k">平均耗时</div><div class="v brand" id="kDur">0</div><div class="d" id="kDurD">—</div></div>
+      <div class="stat"><div class="k">Token 消耗</div><div class="v info" id="kTok">0</div><div class="d" id="kTokD">—</div></div>
+      <div class="stat"><div class="k">成本合计</div><div class="v warn" id="kCost">0</div><div class="d" id="kCostD">—</div></div>
+    </div>
+
+    <!-- 筛选工具栏 -->
+    <div class="toolbar">
+      <select class="select" id="fWf" style="width:200px"></select>
+      <div class="segmented" id="fStatus">
+        <button class="active" data-st="all">全部</button>
+        <button data-st="success">成功</button>
+        <button data-st="failed">失败</button>
+        <button data-st="running">运行中</button>
+      </div>
+      <select class="select" id="fTrigger" style="width:150px"></select>
+      <input class="input" type="date" id="fFrom" style="width:150px">
+      <span class="sep"></span>
+      <span style="color:var(--tx-3);font-size:11.5px">至</span>
+      <input class="input" type="date" id="fTo" style="width:150px">
+      <span class="sep"></span>
+      <div class="search"><input class="input" id="fSearch" placeholder="搜索运行 ID / 工作流 / 分支"></div>
+      <button class="btn ghost" id="fReset">重置</button>
+      <div class="topbar-spacer"></div>
+      <span class="tag" id="fCount">0 条</span>
+    </div>
+
+    <!-- 主从布局 -->
+    <div class="split">
+      <div class="card">
+        <div class="card-head">
+          <h3>运行记录</h3>
+          <span class="sub">按开始时间倒序 · 点击查看节点级追踪</span>
+          <div style="margin-left:auto" class="tag">RUNS</div>
+        </div>
+        <div class="card-body tight">
+          <div class="list-scroll">
+            <table class="table" id="runTable">
+              <thead><tr>
+                <th>运行 ID</th><th>工作流 / 分支</th><th>触发</th><th>状态</th><th>耗时</th><th>成本</th><th>门禁</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="detail"></div>
+    </div>
+
+  </div></main>
+</div>
+
+<div class="rail"><button id="railLedger">📚 证据账本 <b id="railCount">0</b></button></div>
+
+<script src="assets/js/app.js"></script>
+<script>
+/* ==========================================================================
+   执行追踪 —— 数据全部派生自 app.js 的 Mock 常量
+   ========================================================================== */
+const TODAY = '2026-10-20';
+
+/* 工作流 → 节点序列（节点 id 取自 ALL_NODES，含 PRD 8.x 编排范式） */
+const WF_NODES = {
+  wf_cicd:   ['impact_analysis','risk_rating','code_change_gen','case_gen','data_synth','api_test','ui_explore','security_scan','triage','root_cause','quality_gate','defect_archive','report_gen'],
+  wf_explore:['strategy_gen','unit_test_gen','mutation_test','browser_use','async_task','join','triage','root_cause','quality_gate','report_gen'],
+  wf_mobile: ['compat_test','airtest','db_consistency','contract_check','async_task','join','visual_regression','quality_gate','report_gen'],
+  wf_api:    ['api_test','contract_check','db_consistency','agent_tool_contract','triage','defect_archive','report_gen'],
+  wf_a11y:   ['a11y_test','ui_explore','visual_regression','qa_assistant','quality_gate','report_gen'],
+  wf_design: ['req_parse','case_gen','data_synth','sufficiency','asset_certify','asset_version','qa_assistant','quality_gate','report_gen'],
+  wf_sec:    ['risk_rating','security_scan','agent_tool_call','triage','root_cause','quality_gate','report_gen'],
+  wf_perf:   ['strategy_gen','perf_test','chaos_test','async_task','join','quality_gate','report_gen']
+};
+/* 失败工作流的故障落点（用于节点级追踪） */
+const FAIL_POINT = { wf_cicd:'api_test', wf_explore:'browser_use', wf_mobile:'airtest', wf_api:'contract_check', wf_a11y:'a11y_test' };
+const CAT_W = { design:1.2, execute:1.6, diagnose:0.9, quality:1.0, control:0.6, base:0.4 };
+const TOOL_BY_CAT = { design:'mcp.tool.invoke', execute:'http.request', diagnose:'log.query', quality:'rule-engine.evaluate', control:'workflow.route', base:'sandbox.exec' };
+
+const $q = new URLSearchParams(location.search);
+const state = { wf:'all', st:'all', tr:'all', from:'', to:'', q:'', sel:$q.get('run') || RUNS[0].id };
+
+/* ---------- 工具 ---------- */
+function parseDur(s){
+  if(!s || s === '运行中') return 0;
+  const m = String(s).match(/(\d+)\s*m\s*(\d+)\s*s/);
+  if(m) return (+m[1]) * 60 + (+m[2]);
+  const s2 = String(s).match(/(\d+)\s*s/);
+  return s2 ? (+s2[1]) : 0;
+}
+function durText(sec){
+  if(sec < 60) return sec + 's';
+  return Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+}
+function skey(r){ return (r.id + ' ' + r.wf + ' ' + r.wfName + ' ' + r.branch + ' ' + r.trigger + ' ' + r.by).toLowerCase(); }
+function gateTag(g){
+  const map = { '通过':['ok','通过'], '有条件通过':['warn','有条件通过'], '阻断':['err','阻断'] };
+  const m = map[g] || ['','—'];
+  return `<span class="tag ${m[0]}">${esc(m[1])}</span>`;
+}
+function nodeMeta(r){ return ALL_NODES[r.id] || { name:r.id, cat:'base', desc:'', out:[], icon:'◻' }; }
+
+/* ---------- 节点级状态与度量（按运行状态派生） ---------- */
+function nodeStates(run){
+  const seq = ['start'].concat(WF_NODES[run.wf] || []).concat(['end']);
+  const out = seq.map(id => ({ id:id, st:'wait' }));
+  if(run.status === 'success'){
+    out.forEach(o => o.st = 'ok');
+  } else if(run.status === 'failed'){
+    const fp = FAIL_POINT[run.wf];
+    const i = out.findIndex(o => o.id === fp);
+    out.forEach((o, idx) => {
+      if(idx < i) o.st = 'ok';
+      else if(idx === i) o.st = 'err';
+      else if(o.id === 'triage' || o.id === 'root_cause') o.st = 'ok';
+      else if(o.id === 'quality_gate') o.st = 'err';
+      else o.st = 'warn';
+    });
+  } else {
+    const k = Math.max(1, Math.floor(out.length * 0.6));
+    out.forEach((o, idx) => { o.st = idx < k - 1 ? 'ok' : (idx === k - 1 ? 'run' : 'wait'); });
+  }
+  const w = out.map(o => CAT_W[nodeMeta(o).cat] || 1);
+  const sum = w.reduce((a,b) => a + b, 0) || 1;
+  const total = run.dur === '运行中' ? 720 : parseDur(run.dur);
+  return out.map((o, i) => ({
+    id:o.id, st:o.st,
+    sec: Math.max(1, Math.round(total * w[i] / sum)),
+    tokens: Math.round(run.tokens * w[i] / sum),
+    cost: +(run.cost * w[i] / sum).toFixed(2)
+  }));
+}
+
+/* ---------- 证据账本关联 ---------- */
+function tsSec(t){ return Math.floor(new Date(t.replace(/-/g,'/')).getTime() / 1000); }
+function evidenceFor(run){
+  const start = tsSec(run.started);
+  const win = run.dur === '运行中' ? 900 : parseDur(run.dur);
+  return AUDIT.filter(e => {
+    const t = tsSec(e.ts);
+    return t >= start - 300 && t <= start + win + 120;
+  });
+}
+function eventNode(e){
+  const map = { '工作流运行':'start', '工具调用':'quality_gate', '人工审批':'plan_gate', '白名单拒绝':'ui_explore',
+    '外部调用':'start', '缺陷归档':'defect_archive', '裁决升级':'risk_rating', '任务提交':'async_task',
+    '资源锁':'async_task', '资产认证':'asset_certify' };
+  return map[e.type] || 'quality_gate';
+}
+function evCls(r){
+  if(r === 'success' || r === 'approved' || r === 'acquired') return 'ok';
+  if(r === 'denied' || r === 'blocked') return 'err';
+  if(r === 'escalated') return 'warn';
+  return 'info';
+}
+
+/* ---------- 筛选 ---------- */
+function filtered(){
+  return RUNS.filter(r => {
+    if(state.wf !== 'all' && r.wf !== state.wf) return false;
+    if(state.st !== 'all' && r.status !== state.st) return false;
+    if(state.tr !== 'all' && r.trigger !== state.tr) return false;
+    const d = r.started.slice(0, 10);
+    if(state.from && d < state.from) return false;
+    if(state.to && d > state.to) return false;
+    if(state.q && skey(r).indexOf(state.q) < 0) return false;
+    return true;
+  });
+}
+
+/* ---------- 渲染：KPI ---------- */
+function renderKPI(rows){
+  const today = rows.filter(r => r.started.slice(0,10) === TODAY);
+  const done = rows.filter(r => r.status !== 'running');
+  const ok = done.filter(r => r.status === 'success').length;
+  const pass = done.length ? ok / done.length : 0;
+  const avg = done.length ? done.reduce((a,r) => a + parseDur(r.dur), 0) / done.length : 0;
+  const tok = rows.reduce((a,r) => a + r.tokens, 0);
+  const cost = rows.reduce((a,r) => a + r.cost, 0);
+
+  animateNumber($('#kRuns'), today.length, 700, v => Math.round(v).toLocaleString('en-US'));
+  animateNumber($('#kPass'), pass * 100, 700, v => v.toFixed(1) + '%');
+  animateNumber($('#kDur'), avg / 60, 700, v => v.toFixed(1) + ' 分钟');
+  animateNumber($('#kTok'), tok / 10000, 700, v => v.toFixed(1) + ' 万');
+  animateNumber($('#kCost'), cost, 700, v => '$' + v.toFixed(2));
+
+  $('#kRunsD').textContent = '今日 ' + TODAY + ' · 筛选内共 ' + rows.length + ' 次';
+  $('#kPassD').textContent = ok + ' / ' + done.length + ' 次已完成';
+  $('#kDurD').textContent = '不含运行中的执行';
+  $('#kTokD').textContent = '输入 + 输出合计';
+  $('#kCostD').textContent = '按节点计量汇总';
+}
+
+/* ---------- 渲染：列表 ---------- */
+function renderList(){
+  const rows = filtered();
+  const tb = $('#runTable tbody');
+  tb.innerHTML = rows.length ? rows.map(r => `
+    <tr class="clickable ${r.id === state.sel ? 'sel' : ''}" data-run="${esc(r.id)}" data-skey="${esc(skey(r))}">
+      <td class="mono">${esc(r.id)}<div style="color:var(--tx-3);font-size:10.5px">${esc(r.started)}</div></td>
+      <td>${esc(r.wfName)}<div style="color:var(--tx-3);font-size:10.5px">${esc(r.ver)} · ${esc(r.branch)}</div></td>
+      <td><span style="color:var(--tx-3)">${esc(r.triggerIcon)}</span> ${esc(r.trigger)}</td>
+      <td>${statusTag(r.status)}</td>
+      <td class="mono">${esc(r.dur)}</td>
+      <td class="mono">${money(r.cost)}</td>
+      <td>${gateTag(r.gate)}</td>
+    </tr>`).join('')
+    : `<tr><td colspan="7"><div class="empty"><div class="ico">⌕</div><h4>没有匹配的运行</h4><p>调整筛选条件或点击「重置」</p></div></td></tr>`;
+  $('#fCount').textContent = rows.length + ' 条';
+  renderKPI(rows);
+}
+
+/* ---------- 渲染：门禁裁决 ---------- */
+function gateOf(run){
+  if(run.status === 'running'){
+    return { verdict:'待裁决', cls:'wait', basis:[
+      { k:'关键断言通过率', a:'进行中', t:'≥ 98%', ok:null },
+      { k:'阻断级安全发现', a:'进行中', t:'= 0', ok:null },
+      { k:'变异分数', a:'进行中', t:'≥ 0.70', ok:null },
+      { k:'副作用回归', a:'进行中', t:'无阻断', ok:null } ],
+      blockers:[],
+      narrative:'本次运行尚未产生裁决。门禁节点抵达后由规则引擎先行计算确定性结论，模型仅在其后补充归因叙述。' };
+  }
+  if(run.status === 'failed'){
+    return { verdict:'阻断', cls:'block', basis:[
+      { k:'关键断言通过率', a:'91.4%', t:'≥ 98%', ok:false },
+      { k:'阻断级安全发现', a:'1 项', t:'= 0', ok:false },
+      { k:'变异分数', a:'0.44', t:'≥ 0.70', ok:false },
+      { k:'副作用回归', a:'存在阻断项', t:'无阻断', ok:false },
+      { k:'需求覆盖率', a:'63.2%', t:'≥ 85%', ok:false } ],
+      blockers:[
+        '断言通过率 91.4% 低于门槛 98%，失败用例集中在订单支付链路',
+        '存在 1 项阻断级安全发现，规则引擎不允许降级放行',
+        '变异分数 0.44 低于门槛 0.70，测试套件缺陷检测能力不足',
+        '副作用回归发现阻断项，资产版本不可在本次发布中升级' ],
+      narrative:'模型归因：失败集中于支付回调路径的幂等性断言，变更影响分析显示该模块直接风险等级为 P0，但变异测试未覆盖幂等分支，疑似测试资产覆盖不足而非产品缺陷。建议先补齐幂等场景用例再复跑。' };
+  }
+  const cond = run.gate === '有条件通过';
+  const basis = [
+    { k:'关键断言通过率', a:'98.2%', t:'≥ 98%', ok:true },
+    { k:'阻断级安全发现', a:'0 项', t:'= 0', ok:true },
+    { k:'变异分数', a:'0.92', t:'≥ 0.70', ok:true },
+    { k:'副作用回归', a:'无阻断', t:'无阻断', ok:true },
+    { k:'需求覆盖率', a:'91.4%', t:'≥ 85%', ok:true }
+  ];
+  if(cond) basis.splice(2, 0, { k:'低危安全发现', a:'1 项', t:'≤ 3 项', ok:'cond' });
+  return { verdict: cond ? '有条件通过' : '通过', cls: cond ? 'cond' : 'pass', basis: basis,
+    blockers: cond ? ['低危安全发现 1 项已登记为观察项，允许放行但需在下一个迭代关闭'] : [],
+    narrative: cond
+      ? '模型归因：API 通过率 98.2% 达标，安全扫描发现 1 项低危（依赖版本信息泄露），不影响放行但需在本迭代修复。该结论为模型生成的归因叙述，不参与裁决。'
+      : '模型归因：全部规则项均达标，变更影响范围可控，建议按既有计划继续发布。该结论为模型生成的归因叙述，不参与裁决。' };
+}
+
+/* ---------- 渲染：执行面板（节点展开块） ---------- */
+function promptOf(n){
+  const vars = (n.out || []).slice(0, 2).map(v => '{{' + v + '}}');
+  return [
+    '[系统] 你是「' + n.name + '」智能体节点，运行于独立上下文边界，仅可调用白名单工具。',
+    '[分类] ' + CAT_META[n.cat].name + '（' + n.cat + '）',
+    '[任务] ' + n.desc,
+    '[输入变量] ' + (vars.join(' , ') || '{{run_context}}') + ' , {{run_context}}',
+    '[输出契约] ' + (n.out || []).join(' , '),
+    '[约束] 预算与时限由平台代码强制；证据必须引用真实记录；越权调用将被运行时拦截并记入审计账本。'
+  ].join('\n');
+}
+function outputOf(n){
+  const keys = n.out || [];
+  return '{\n' + keys.map(k => '  "' + k + '": <' + k + '_value>').join(',\n') + '\n}';
+}
+function toolCallOf(n, run){
+  const tool = TOOL_BY_CAT[n.cat] || 'mcp.tool.invoke';
+  return '--- request ---\nPOST /mcp/invoke\n{\n  "tool": "' + tool + '",\n  "node": "' + n.id + '",\n  "node_name": "' + n.name + '",\n  "run_id": "' + run.id + '",\n  "args": { "timeout_ms": 30000, "retries": 1, "trace": true }\n}\n\n--- response ---\nHTTP/1.1 200 OK\n{\n  "status": "ok",\n  "latency_ms": 184,\n  "evidence_ref": "trace://runs/' + run.id + '/nodes/' + n.id + '"\n}';
+}
+function stackOf(n){
+  return [
+    'Error: assertion failed — expected status 200, got 503 Service Unavailable',
+    '    at ' + n.id.replace(/_/g, '.') + '.assert (' + n.id + '.js:142:18)',
+    '    at async Runner.exec (runner.js:88:9)',
+    '    at async WorkflowNode.run (node.js:53:5)',
+    '    at async WorkflowEngine.step (engine.js:117:11)'
+  ].join('\n');
+}
+function execBlock(run, m, evs){
+  const n = nodeMeta(m);
+  const stateMap = { ok:['成功',''], err:['失败','err'], run:['运行中','info'], warn:['未执行','warn'], wait:['等待中',''] };
+  const sm = stateMap[m.st] || stateMap.wait;
+  const evOf = evs.filter(e => eventNode(e) === m.id);
+  const evHtml = evOf.length
+    ? evOf.map(e => `<a class="tag ${evCls(e.result) === 'ok' ? 'ok' : evCls(e.result) === 'err' ? 'err' : 'info'}" href="audit.html?evt=${esc(e.id)}">${esc(e.id)} · ${esc(e.type)}</a>`).join('')
+    : '<span class="tag">trace://runs/' + esc(run.id) + '/nodes/' + esc(m.id) + '</span>';
+  const fail = m.st === 'err';
+  return `
+  <details class="exec" ${m.st === 'err' ? 'open' : ''}>
+    <summary>
+      <span class="ex-caret">▶</span>
+      <span class="ex-dot ${m.st}"></span>
+      <span class="ex-name">${esc(n.icon || '◻')} ${esc(n.name)}</span>
+      <span class="tag">${esc(CAT_META[n.cat] ? CAT_META[n.cat].name : n.cat)}</span>
+      <span class="tag ${sm[1]}">${esc(sm[0])}</span>
+      <span class="ex-meta">${esc(durText(m.sec))} · ${num(m.tokens)} tok · ${money(m.cost)}</span>
+    </summary>
+    <div class="ex-body">
+      <div class="ex-kv">
+        <div class="k"><div class="kk">节点 ID</div><div class="vv">${esc(m.id)}</div></div>
+        <div class="k"><div class="kk">耗时</div><div class="vv">${esc(durText(m.sec))}</div></div>
+        <div class="k"><div class="kk">Token 消耗</div><div class="vv">${num(m.tokens)}</div></div>
+        <div class="k"><div class="kk">成本</div><div class="vv">${money(m.cost)}</div></div>
+      </div>
+      <div class="lbl"><b>完整输入提示词</b> <span>已脱敏</span></div>
+      <div class="code">${esc(promptOf(n))}</div>
+      <div class="lbl"><b>输出内容</b></div>
+      <div class="code">${esc(outputOf(n))}</div>
+      <div class="lbl"><b>工具调用详情</b> <span>${esc(TOOL_BY_CAT[n.cat] || 'mcp.tool.invoke')}</span></div>
+      <div class="code">${esc(toolCallOf(n, run))}</div>
+      ${fail ? `<div class="lbl"><b>错误堆栈</b></div><div class="code">${esc(stackOf(n))}</div>` : ''}
+      <div class="lbl"><b>证据引用</b> <span>平台代码校验存在性</span></div>
+      <div class="ev-refs">${evHtml}</div>
+      <div class="lbl"><b>追踪链接</b></div>
+      <div class="ev-refs">
+        <a class="tag brand" href="audit.html?evt=${esc((evOf[0] || AUDIT[0]).id)}">审计账本条目</a>
+        <span class="tag">trace://runs/${esc(run.id)}/nodes/${esc(m.id)}</span>
+        <a class="tag" href="editor.html?wf=${esc(run.wf)}">在画布中打开节点</a>
+      </div>
+    </div>
+  </details>`;
+}
+
+/* ---------- 渲染：详情面板 ---------- */
+function renderDetail(){
+  const run = RUNS.find(r => r.id === state.sel);
+  const box = $('#detail');
+  if(!run){
+    box.innerHTML = '<div class="card"><div class="empty"><div class="ico">⏱</div><h4>请选择一次运行</h4><p>从左侧列表选择运行记录以查看节点级追踪与执行面板</p></div></div>';
+    return;
+  }
+  const states = nodeStates(run);
+  const evs = evidenceFor(run);
+  const g = gateOf(run);
+  const totalSec = states.reduce((a,m) => a + m.sec, 0);
+  const tl = states.map(m => {
+    const n = nodeMeta(m);
+    const label = { ok:'成功', err:'失败', run:'运行中', warn:'前序失败未执行', wait:'等待中' }[m.st];
+    return `<div class="tl-item ${m.st}">
+      <h5>${esc(n.icon || '◻')} ${esc(n.name)} <span class="tag">${esc(CAT_META[n.cat] ? CAT_META[n.cat].name : n.cat)}</span></h5>
+      <div class="meta">${esc(label)} · ${esc(durText(m.sec))} · ${num(m.tokens)} tok · ${money(m.cost)}</div>
+    </div>`;
+  }).join('');
+
+  box.innerHTML = `
+  <div class="card">
+    <div class="card-head">
+      <h3>${esc(run.wfName)}</h3>
+      <span class="tag">${esc(run.ver)}</span>
+      ${statusTag(run.status)}
+      <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn sm" id="btnRerun">重新执行</button>
+        <button class="btn sm" id="btnExport">导出追踪</button>
+        <button class="btn sm" id="btnLedger">证据账本</button>
+        <a class="btn sm primary" href="editor.html?wf=${esc(run.wf)}">在画布中打开</a>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="meta-grid">
+        <div class="m"><div class="k">触发方式</div><div class="v">${esc(run.triggerIcon)} ${esc(run.trigger)}</div></div>
+        <div class="m"><div class="k">开始时间</div><div class="v">${esc(run.started)}</div></div>
+        <div class="m"><div class="k">总耗时</div><div class="v">${esc(run.dur)}</div></div>
+        <div class="m"><div class="k">分支</div><div class="v">${esc(run.branch)}</div></div>
+        <div class="m"><div class="k">Token 消耗</div><div class="v">${num(run.tokens)}</div></div>
+        <div class="m"><div class="k">成本</div><div class="v">${money(run.cost)}</div></div>
+        <div class="m"><div class="k">门禁裁决</div><div class="v">${esc(run.gate)}</div></div>
+        <div class="m"><div class="k">触发人</div><div class="v">${esc(run.by)}</div></div>
+      </div>
+
+      <div class="sec-title">节点级时间线 <span class="tag">${states.length} 个节点 · 累计 ${esc(durText(totalSec))}</span></div>
+      <div class="timeline">${tl}</div>
+
+      <div class="sec-title">执行面板 <span class="tag">PRD §7.4</span></div>
+      <div class="notice" style="margin-bottom:10px">
+        <span class="ico">▤</span>
+        <span>按时间顺序展示每个节点的<b>输入提示词、输出内容、工具调用报文、错误堆栈、耗时、Token 与成本</b>，展开可查看证据引用与追踪链接。</span>
+      </div>
+      ${states.map(m => execBlock(run, m, evs)).join('')}
+
+      <div class="sec-title">质量门禁裁决 <span class="tag">PRD 原则五 · 判定权与叙述权分离</span></div>
+      <div class="gate-wrap">
+        <div class="gate-box">
+          <div class="g-lbl">① 确定性判定 · 规则引擎（具最终裁决权）</div>
+          <div class="gate-verdict ${g.cls}">${esc(g.verdict)}</div>
+          <div style="font-size:11px;color:var(--tx-3);margin-bottom:8px">裁决来源：rule-engine.gate.evaluate · 执行人：平台规则引擎</div>
+          <table class="table gate-table">
+            <thead><tr><th>判定项</th><th>实际值</th><th>门槛</th><th>结果</th></tr></thead>
+            <tbody>${g.basis.map(b => `<tr>
+              <td>${esc(b.k)}</td><td class="mono">${esc(b.a)}</td><td class="mono">${esc(b.t)}</td>
+              <td>${b.ok === true ? '<span class="tag ok">达标</span>' : b.ok === false ? '<span class="tag err">未达标</span>' : b.ok === 'cond' ? '<span class="tag warn">条件达标</span>' : '<span class="tag">待定</span>'}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+        <div class="gate-box">
+          <div class="g-lbl">② 归因叙述 · 模型生成（仅建议，不参与裁决）</div>
+          <div class="gate-narr">${esc(g.narrative)}</div>
+          <div class="notice warn" style="margin-top:10px">
+            <span class="ico">!</span>
+            <span>模型<b>不得覆盖</b>规则引擎的判定结论；叙述与判定分别留痕，修改任一方都会在审计账本产生新记录。</span>
+          </div>
+        </div>
+      </div>
+
+      ${g.blockers.length ? `<div class="sec-title">阻断项 <span class="tag err">${g.blockers.length}</span></div>
+      <div class="notice err">
+        <span class="ico">✕</span>
+        <ul class="blockers" style="margin:0;padding-left:16px">${g.blockers.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
+      </div>` : ''}
+
+      <div class="sec-title">本次运行关联证据 <span class="tag">${evs.length} 条</span></div>
+      <div class="card" style="background:var(--bg-2)">
+        <div class="card-body tight">
+          <div class="stream">${evs.length ? evs.map(e => `
+            <div class="stream-item ${evCls(e.result)}">
+              <span class="t">${esc(e.ts.slice(11))}</span><span class="dot"></span>
+              <span class="b"><span class="m"><b>${esc(e.type)}</b> · ${esc(e.actor)}</span>
+                <div style="color:var(--tx-2);margin-top:2px">${esc(e.target)}</div>
+                <div style="color:var(--tx-3);font-size:11px;margin-top:2px">${esc(e.detail)}</div>
+              </span>
+              <a class="tag" href="audit.html?evt=${esc(e.id)}">${esc(e.id)}</a>
+            </div>`).join('') : '<div class="empty" style="padding:26px"><div class="ico">📚</div><h4>暂无关联证据</h4><p>本次运行未产生可入账的关键动作</p></div>'}</div>
+        </div>
+        <div class="card-body" style="border-top:1px solid var(--line-1);display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn sm" id="btnLedger2">打开完整证据账本</button>
+          <a class="btn sm" href="audit.html">前往审计账本 →</a>
+          <a class="btn sm ghost" href="runs.html?run=${esc(run.id)}">复制本次运行链接</a>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  $('#btnRerun').addEventListener('click', () => toast('已提交重新执行：' + run.id + '（演示环境不接后端）'));
+  $('#btnExport').addEventListener('click', () => toast('追踪记录已导出：' + run.id + '.json', 'ok'));
+  $('#btnLedger').addEventListener('click', () => openLedger(run));
+  $('#btnLedger2').addEventListener('click', () => openLedger(run));
+  $('#railCount').textContent = evs.length;
+}
+
+/* ---------- 证据账本抽屉 ---------- */
+function openLedger(run){
+  const evs = evidenceFor(run);
+  const html = `
+    <div class="card-head">
+      <h3>证据账本 · ${esc(run.id)}</h3>
+      <span class="sub">${evs.length} 条不可篡改记录</span>
+      <button class="btn sm ghost" data-dw-close style="margin-left:auto">✕ 关闭</button>
+    </div>
+    <div class="card-body tight" style="flex:1;overflow:auto">
+      <div class="stream">${evs.length ? evs.map(e => `
+        <div class="stream-item ${evCls(e.result)}">
+          <span class="t">${esc(e.ts.slice(11))}</span><span class="dot"></span>
+          <span class="b"><span class="m"><b>${esc(e.type)}</b> · ${esc(e.actor)}</span>
+            <div style="color:var(--tx-2);margin-top:2px">${esc(e.target)}</div>
+            <div style="color:var(--tx-3);font-size:11px;margin-top:2px">${esc(e.detail)}</div>
+            <div class="ev-refs" style="margin-top:5px"><span class="tag">${esc(e.hash)}</span><a class="tag brand" href="audit.html?evt=${esc(e.id)}">在审计账本中查看</a></div>
+          </span>
+        </div>`).join('') : '<div class="empty"><div class="ico">📚</div><h4>暂无关联证据</h4><p>本次运行未产生可入账的关键动作</p></div>'}</div>
+    </div>
+    <div class="card-body" style="border-top:1px solid var(--line-1)">
+      <a class="btn sm" href="audit.html">前往审计账本 →</a>
+      <button class="btn sm ghost" id="btnExportLedger">导出账本</button>
+    </div>`;
+  const d = openDrawer(html, { wide:true });
+  d.el.querySelector('[data-dw-close]').addEventListener('click', d.close);
+  d.el.querySelector('#btnExportLedger').addEventListener('click', () => toast('证据账本已导出：' + run.id + '-ledger.json', 'ok'));
+}
+
+/* ---------- 初始化 ---------- */
+function init(){
+  renderShell('runs', {
+    title:'执行追踪', sub:'全链路运行记录',
+    actions:'<button class="btn" id="tbRefresh">⟳ 刷新</button><button class="btn primary" id="tbNewRun">＋ 发起运行</button>'
+  });
+
+  $('#fWf').innerHTML = '<option value="all">全部工作流</option>' +
+    WORKFLOWS.map(w => '<option value="' + w.id + '">' + esc(w.name) + '</option>').join('');
+  const trigs = Array.from(new Set(RUNS.map(r => r.trigger)));
+  $('#fTrigger').innerHTML = '<option value="all">全部触发方式</option>' +
+    trigs.map(t => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('');
+
+  $('#fWf').addEventListener('change', e => { state.wf = e.target.value; renderList(); });
+  $('#fTrigger').addEventListener('change', e => { state.tr = e.target.value; renderList(); });
+  $('#fFrom').addEventListener('change', e => { state.from = e.target.value; renderList(); });
+  $('#fTo').addEventListener('change', e => { state.to = e.target.value; renderList(); });
+  $('#fSearch').addEventListener('input', e => { state.q = e.target.value.trim().toLowerCase(); renderList(); });
+  $$('#fStatus button').forEach(b => b.addEventListener('click', () => {
+    $$('#fStatus button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.st = b.dataset.st;
+    renderList();
+  }));
+  $('#fReset').addEventListener('click', () => {
+    state.wf = 'all'; state.st = 'all'; state.tr = 'all';
+    state.from = ''; state.to = ''; state.q = '';
+    $('#fWf').value = 'all'; $('#fTrigger').value = 'all';
+    $('#fFrom').value = ''; $('#fTo').value = ''; $('#fSearch').value = '';
+    $$('#fStatus button').forEach((x,i) => x.classList.toggle('active', i === 0));
+    renderList(); toast('筛选条件已重置', 'info');
+  });
+
+  /* 搜索：使用运行时提供的 initFilter（按行 data-skey 过滤） */
+  initFilter('#fSearch', '#runTable tbody tr', 'skey');
+
+  $('#runTable tbody').addEventListener('click', e => {
+    const tr = e.target.closest('tr[data-run]');
+    if(!tr) return;
+    state.sel = tr.dataset.run;
+    history.replaceState(null, '', '?run=' + encodeURIComponent(state.sel));
+    renderList(); renderDetail();
+  });
+
+  $('#railLedger').addEventListener('click', () => {
+    const run = RUNS.find(r => r.id === state.sel);
+    if(run) openLedger(run);
+  });
+
+  $('#tbRefresh').addEventListener('click', () => { renderList(); renderDetail(); toast('运行记录已刷新', 'ok'); });
+  $('#tbNewRun').addEventListener('click', () => {
+    openModal(`
+      <div class="modal-head"><h3>发起工作流运行</h3><span class="x" data-close>✕</span></div>
+      <div class="modal-body">
+        <div class="field"><label>选择工作流 <span class="req">*</span></label>
+          <select class="select" id="mWf">${WORKFLOWS.map(w => '<option value="' + w.id + '">' + esc(w.name) + ' · ' + esc(w.ver || '') + '</option>').join('')}</select>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>分支</label><input class="input" id="mBranch" value="main"></div>
+          <div class="field"><label>触发方式</label><select class="select" id="mTrigger">
+            <option>手动执行</option><option>Git Push</option><option>定时调度</option><option>外部 Agent 调用</option></select></div>
+        </div>
+        <div class="field"><label>运行参数</label>
+          <textarea class="textarea" id="mParam">{"suite":"regression","seed":20261020}</textarea>
+          <div class="hint">原型演示：提交后仅提示，不会真正触发后端执行。</div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" data-close>取消</button>
+        <button class="btn primary" id="mGo">提交运行</button>
+      </div>`).el.querySelector('#mGo').addEventListener('click', () => {
+        toast('运行已提交，可在运行记录中查看', 'ok');
+        $$('.modal-mask.show').forEach(m => m.remove());
+      });
+  });
+
+  renderList();
+  renderDetail();
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body></html>

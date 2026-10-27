@@ -1,0 +1,236 @@
+{
+  "registry": [
+    {
+      "id": "claude_opus_4_5",
+      "name": "Claude-Opus-4.5",
+      "vendor": "Anthropic",
+      "kind": "文本",
+      "tier": "高",
+      "context": "200K",
+      "dailyLimit": 500,
+      "pricePerMIn": 15.0,
+      "pricePerMOut": 75.0,
+      "desc": "旗舰推理模型，适合复杂归因与用例生成"
+    },
+    {
+      "id": "claude_sonnet_4_5",
+      "name": "Claude-Sonnet-4.5",
+      "vendor": "Anthropic",
+      "kind": "文本",
+      "tier": "中",
+      "context": "200K",
+      "dailyLimit": 2000,
+      "pricePerMIn": 3.0,
+      "pricePerMOut": 15.0,
+      "desc": "均衡性能与成本，适合大部分节点执行"
+    },
+    {
+      "id": "gemini_2_5_pro",
+      "name": "Gemini-2.5-Pro",
+      "vendor": "Google",
+      "kind": "文本",
+      "tier": "高",
+      "context": "1M",
+      "dailyLimit": 1000,
+      "pricePerMIn": 1.25,
+      "pricePerMOut": 10.0,
+      "desc": "超长上下文，适合大规模日志分析"
+    },
+    {
+      "id": "gpt_4o",
+      "name": "GPT-4o",
+      "vendor": "OpenAI",
+      "kind": "多模态",
+      "tier": "中",
+      "context": "128K",
+      "dailyLimit": 2000,
+      "pricePerMIn": 2.5,
+      "pricePerMOut": 10.0,
+      "desc": "多模态理解，适合 UI 截图分析"
+    },
+    {
+      "id": "qwen3_max",
+      "name": "Qwen3-Max",
+      "vendor": "Alibaba",
+      "kind": "文本",
+      "tier": "中",
+      "context": "256K",
+      "dailyLimit": 3000,
+      "pricePerMIn": 1.5,
+      "pricePerMOut": 4.5,
+      "desc": "中文理解与代码生成强项"
+    },
+    {
+      "id": "claude_opus_4_5_vision",
+      "name": "Claude-Opus-4.5-Vision",
+      "vendor": "Anthropic",
+      "kind": "视觉",
+      "tier": "高",
+      "context": "200K",
+      "dailyLimit": 200,
+      "pricePerMIn": 15.0,
+      "pricePerMOut": 75.0,
+      "desc": "视觉理解，适合缺陷截图识别"
+    }
+  ],
+  "configs": {
+    "global": {
+      "level": "全站",
+      "textModel": "claude_sonnet_4_5",
+      "visionModel": "claude_opus_4_5_vision",
+      "params": {
+        "temperature": 0.2,
+        "maxTokens": 4096
+      },
+      "keyMasked": "sk-ant-••••••••7f3a",
+      "connected": true,
+      "keyMaskedSource": "管理员",
+      "lastTestAt": "2026-10-26 20:29"
+    },
+    "personal_test_lead": {
+      "level": "个人",
+      "owner": "测试负责人",
+      "textModel": "qwen3_max",
+      "visionModel": "gpt_4o",
+      "params": {
+        "temperature": 0.3,
+        "maxTokens": 8192
+      },
+      "keyMasked": "sk-alb-••••••••9c2d",
+      "connected": true,
+      "keyMaskedSource": "个人自带凭据"
+    },
+    "role_gate_judge": {
+      "level": "角色",
+      "owner": "质量门禁裁决节点",
+      "textModel": "claude_opus_4_5",
+      "visionModel": "",
+      "params": {
+        "temperature": 0.0,
+        "maxTokens": 2048
+      },
+      "keyMasked": "sk-ant-••••••••7f3a",
+      "connected": true,
+      "keyMaskedSource": "继承全站"
+    },
+    "role_case_generator": {
+      "level": "角色",
+      "owner": "用例生成节点",
+      "textModel": "gemini_2_5_pro",
+      "visionModel": "",
+      "params": {
+        "temperature": 0.4,
+        "maxTokens": 16384
+      },
+      "keyMasked": "sk-goo-••••••••4e1b",
+      "connected": false,
+      "keyMaskedSource": "角色独立凭据"
+    }
+  },
+  "grants": [
+    {
+      "id": "grant_001",
+      "account": "测试负责人",
+      "model": "claude_sonnet_4_5",
+      "date": "2026-10-26",
+      "extraQuota": 500,
+      "revoked": true,
+      "by": "管理员",
+      "ts": "2026-10-26 08:00",
+      "revokedAt": "2026-10-26 20:29"
+    },
+    {
+      "id": "grant_002",
+      "account": "测试负责人",
+      "model": "claude_sonnet_4_5",
+      "date": "2026-10-25",
+      "extraQuota": 300,
+      "revoked": false,
+      "by": "管理员",
+      "ts": "2026-10-25 08:00"
+    },
+    {
+      "id": "grant_003",
+      "account": "测试负责人",
+      "model": "gemini_2_5_pro",
+      "date": "2026-10-24",
+      "extraQuota": 200,
+      "revoked": true,
+      "by": "管理员",
+      "ts": "2026-10-24 08:00"
+    },
+    {
+      "id": "grant_84e30e",
+      "account": "V7 测试账号",
+      "model": "claude_opus_4_5",
+      "date": "2026-10-26",
+      "extraQuota": 300,
+      "revoked": false,
+      "by": "管理员",
+      "ts": "2026-10-26 20:29"
+    }
+  ],
+  "quotas": [
+    {
+      "account": "测试负责人",
+      "model": "claude_sonnet_4_5",
+      "dailyLimit": 2000,
+      "usedToday": 1240,
+      "extraToday": 1000,
+      "renewed": true
+    },
+    {
+      "account": "测试负责人",
+      "model": "gemini_2_5_pro",
+      "dailyLimit": 1000,
+      "usedToday": 1000,
+      "extraToday": 0,
+      "renewed": true
+    },
+    {
+      "account": "测试负责人",
+      "model": "qwen3_max",
+      "dailyLimit": 3000,
+      "usedToday": 460,
+      "extraToday": 0,
+      "renewed": false
+    },
+    {
+      "account": "V7 测试账号",
+      "model": "claude_opus_4_5",
+      "dailyLimit": 500,
+      "usedToday": 0,
+      "extraToday": 300,
+      "renewed": false
+    }
+  ],
+  "usage": [
+    {
+      "id": "u1",
+      "model": "claude_sonnet_4_5",
+      "workflow": "我的第一个测试工作流",
+      "node": "需求解析",
+      "tokens": 806,
+      "cost": 0.0041,
+      "ts": "2026-10-26 14:02"
+    },
+    {
+      "id": "u2",
+      "model": "claude_opus_4_5",
+      "workflow": "我的第一个测试工作流",
+      "node": "质量门禁",
+      "tokens": 1220,
+      "cost": 0.0915,
+      "ts": "2026-10-26 14:03"
+    },
+    {
+      "id": "u3",
+      "model": "gemini_2_5_pro",
+      "workflow": "代码变更驱动的 CI/CD 质量门禁",
+      "node": "变更影响分析",
+      "tokens": 3480,
+      "cost": 0.0592,
+      "ts": "2026-10-26 09:01"
+    }
+  ]
+}

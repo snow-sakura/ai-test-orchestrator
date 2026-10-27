@@ -1,0 +1,508 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>异步任务看板 · 智测编排</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>
+  /* 本页专属：看板列 / 任务卡 */
+  .board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}
+  @media (max-width:1400px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .col{background:var(--bg-1);border:1px solid var(--line-1);border-radius:var(--r-lg);overflow:hidden}
+  .col-head{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:1px solid var(--line-1);background:var(--bg-2)}
+  .col-head h4{margin:0;font-size:12.5px;font-weight:600}
+  .col-head .n{margin-left:auto;font-size:10.5px;font-family:var(--mono);color:var(--tx-3);background:var(--bg-3);padding:1px 7px;border-radius:20px}
+  .col-body{padding:10px;display:flex;flex-direction:column;gap:9px;min-height:70px}
+  .tcard{background:var(--bg-2);border:1px solid var(--line-1);border-radius:var(--r-md);padding:10px 11px;cursor:pointer;
+    transition:border-color .15s var(--ease),transform .15s var(--ease)}
+  .tcard:hover{border-color:var(--line-3);transform:translateY(-1px)}
+  .tcard.sel{border-color:var(--brand-500);box-shadow:0 0 0 1px var(--brand-500)}
+  .tcard .tc-top{display:flex;align-items:center;gap:8px}
+  .tcard .tc-id{font-family:var(--mono);font-size:10.5px;color:var(--tx-3)}
+  .tcard .tc-name{font-size:12.5px;font-weight:600;margin-top:5px;line-height:1.4}
+  .tcard .tc-meta{font-size:10.5px;color:var(--tx-3);margin-top:6px;display:flex;flex-direction:column;gap:3px}
+  .tcard .tc-meta span{display:flex;gap:6px;align-items:center}
+  .tcard .tc-meta b{color:var(--tx-2);font-weight:500;min-width:52px;display:inline-block}
+  .tcard .tc-foot{display:flex;align-items:center;gap:6px;margin-top:9px;padding-top:8px;border-top:1px solid var(--line-1);font-size:10.5px;color:var(--tx-3)}
+  .tcard .tc-foot .who{margin-right:auto}
+  .prog-wrap{display:flex;align-items:center;gap:8px;margin-top:9px}
+  .prog-wrap .bar{flex:1}
+  .prog-wrap .pctv{font-family:var(--mono);font-size:10.5px;color:var(--tx-2);width:34px;text-align:right}
+  .dw-sec{padding:13px 16px;border-bottom:1px solid var(--line-1)}
+  .dw-sec:last-child{border-bottom:none}
+  .dw-sec h5{margin:0 0 8px;font-size:11.5px;font-weight:600;color:var(--tx-2);letter-spacing:.4px;display:flex;align-items:center;gap:7px}
+  .dw-sec h5 .tag{font-weight:500}
+  .code-inline{font-family:var(--mono);font-size:11px;background:#0a0d14;border:1px solid var(--line-1);border-radius:var(--r-sm);
+    padding:7px 9px;color:#b8c4da;white-space:pre-wrap;overflow:auto;max-height:160px}
+  .lock-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line-1);border-radius:var(--r-sm);background:var(--bg-2)}
+  .empty-col{text-align:center;color:var(--tx-4);font-size:11.5px;padding:18px 6px}
+</style>
+</head><body>
+<div class="app">
+  <a class="brand" href="dashboard.html">
+    <div class="brand-mark">智</div>
+    <div class="brand-text"><b>智测编排</b><span>AI TEST ORCHESTRATOR</span></div>
+  </a>
+  <header class="topbar"></header>
+  <aside class="side"></aside>
+  <main class="main"><div class="page">
+
+    <!-- KPI -->
+    <div class="grid grid-5" style="margin-bottom:14px">
+      <div class="stat"><div class="k">运行中</div><div class="v info" id="kRun">0</div><div class="d" id="kRunD">—</div></div>
+      <div class="stat"><div class="k">已完成</div><div class="v ok" id="kOk">0</div><div class="d" id="kOkD">—</div></div>
+      <div class="stat"><div class="k">失败</div><div class="v err" id="kFail">0</div><div class="d" id="kFailD">—</div></div>
+      <div class="stat"><div class="k">超时</div><div class="v err" id="kTo">0</div><div class="d" id="kToD">—</div></div>
+      <div class="stat"><div class="k">平均耗时</div><div class="v brand" id="kDur">0</div><div class="d" id="kDurD">—</div></div>
+    </div>
+
+    <!-- 工具栏 -->
+    <div class="toolbar">
+      <div class="segmented" id="viewSwitch">
+        <button class="active" data-view="board">看板</button>
+        <button data-view="list">列表</button>
+      </div>
+      <span class="sep"></span>
+      <select class="select" id="fWf" style="width:210px"></select>
+      <select class="select" id="fType" style="width:150px"></select>
+      <select class="select" id="fRes" style="width:150px"></select>
+      <span class="sep"></span>
+      <div class="search"><input class="input" id="fSearch" placeholder="搜索任务 ID / 名称 / 负责人"></div>
+      <button class="btn ghost" id="fReset">重置</button>
+      <div class="topbar-spacer"></div>
+      <span class="tag" id="fCount">0 个</span>
+    </div>
+
+    <div id="boardView" class="board"></div>
+    <div id="listView" style="display:none">
+      <div class="card">
+        <div class="card-head"><h3>异步任务</h3><span class="sub">全局任务看板 · 按工作流 / 节点 / 资源筛选</span></div>
+        <div class="card-body tight">
+          <table class="table" id="taskTable">
+            <thead><tr>
+              <th>任务 ID</th><th>任务</th><th>类型</th><th>所属工作流</th><th>进度</th><th>状态</th><th>资源</th><th>预计剩余</th><th>负责人</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div></main>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script>
+/* ==========================================================================
+   异步任务看板 —— 数据全部派生自 app.js 的 Mock 常量
+   ========================================================================== */
+/* 任务类型的基准执行时长（分钟）：Mock 中无耗时字段，按类型给出基准并结合进度/ETA 推算 */
+const BASE_MIN = { '大规模回归':42, '安全扫描':58, '多机压测':36, '兼容性回归':31, '压测':40, '副作用回归':14 };
+/* task.workflow 字段可能记录的是节点名，回退到承载该节点的工作流 */
+const NODE_OWNER_WF = { '测试资产版本管理与副作用回归':'wf_design' };
+const COLS = [
+  { key:'running', name:'运行中', cls:'info' },
+  { key:'success', name:'已完成', cls:'ok' },
+  { key:'failed',  name:'失败',   cls:'err' },
+  { key:'timeout', name:'超时',   cls:'err' }
+];
+/* 本地状态覆盖：取消任务等演示动作 */
+const OVERRIDE = {};
+
+const $q = new URLSearchParams(location.search);
+const state = { view:'board', wf:'all', type:'all', res:'all', q:'', sel:null };
+
+function tasks(){ return TASKS.map(t => Object.assign({}, t, OVERRIDE[t.id] || {})); }
+function skey(t){ const w = wfOf(t); return (t.id + ' ' + t.name + ' ' + t.type + ' ' + t.wf + ' ' + (w ? w.id + ' ' + w.name : '') + ' ' + t.owner + ' ' + t.resource).toLowerCase(); }
+function etaMin(t){
+  const m = String(t.eta || '').match(/(\d+)/);
+  return m ? +m[1] : 0;
+}
+/* 推算：终态任务按 基准×进度；运行中任务由 ETA 与进度反推总时长 */
+function timing(t){
+  const base = BASE_MIN[t.type] || 30;
+  if(t.status === 'running'){
+    const rem = etaMin(t);
+    const total = t.progress < 1 ? rem / (1 - t.progress) : base;
+    return { total:total, elapsed:Math.max(1, total - rem), remain:rem };
+  }
+  if(t.status === 'success') return { total:base, elapsed:base, remain:0 };
+  return { total:base * (t.progress || 0), elapsed:base * (t.progress || 0), remain:0 };
+}
+function wfOf(t){
+  const byName = WORKFLOWS.find(w => w.name === t.wf);
+  if(byName) return byName;
+  const id = NODE_OWNER_WF[t.wf];
+  return id ? WORKFLOWS.find(w => w.id === id) : null;
+}
+function resOf(t){
+  if(!t.resource || t.resource === '—') return null;
+  return RESOURCES.find(r => t.resource.indexOf(r.name) >= 0) || null;
+}
+function modeOf(t){
+  return /集群|压测|扫描/.test(t.resource + t.type) ? '事件驱动（回调）' : '轮询（30s 间隔）';
+}
+function statusOf(t){
+  const map = { running:['info','运行中'], success:['ok','已完成'], failed:['err','失败'], timeout:['err','超时'], cancelled:['','已取消'] };
+  const m = map[t.status] || ['', t.status];
+  return '<span class="tag ' + m[0] + ' dot">' + esc(m[1]) + '</span>';
+}
+function minText(m){
+  m = Math.round(m);
+  if(m < 60) return m + ' 分钟';
+  return Math.floor(m / 60) + ' 小时 ' + (m % 60) + ' 分';
+}
+
+/* ---------- 渲染 ---------- */
+function filtered(){
+  return tasks().filter(t => {
+    const w = wfOf(t);
+    if(state.wf !== 'all' && (!w || w.id !== state.wf)) return false;
+    if(state.type !== 'all' && t.type !== state.type) return false;
+    if(state.res !== 'all' && t.resource.indexOf(state.res) < 0) return false;
+    if(state.q && skey(t).indexOf(state.q) < 0) return false;
+    return true;
+  });
+}
+function renderKPI(rows){
+  const c = s => rows.filter(t => t.status === s).length;
+  const run = c('running'), ok = c('success'), fail = c('failed'), to = c('timeout');
+  const avg = rows.length ? rows.reduce((s,t) => s + timing(t).total, 0) / rows.length : 0;
+  animateNumber($('#kRun'), run, 700, v => Math.round(v).toLocaleString('en-US'));
+  animateNumber($('#kOk'), ok, 700, v => Math.round(v).toLocaleString('en-US'));
+  animateNumber($('#kFail'), fail, 700, v => Math.round(v).toLocaleString('en-US'));
+  animateNumber($('#kTo'), to, 700, v => Math.round(v).toLocaleString('en-US'));
+  animateNumber($('#kDur'), avg, 700, v => v.toFixed(1) + ' 分钟');
+  $('#kRunD').textContent = '异步协议 · 立即返回任务标识';
+  $('#kOkD').textContent = '结果已回写工作流变量池';
+  $('#kFailD').textContent = '可重试或转人工处理';
+  $('#kToD').textContent = '按最大执行时长策略终止';
+  $('#kDurD').textContent = '按任务类型基准推算';
+}
+function taskCard(t){
+  const tm = timing(t);
+  const w = wfOf(t);
+  const barCls = t.status === 'success' ? 'ok' : t.status === 'failed' || t.status === 'timeout' ? 'err' : '';
+  return `
+  <div class="tcard ${t.id === state.sel ? 'sel' : ''}" data-task="${esc(t.id)}" data-skey="${esc(skey(t))}">
+    <div class="tc-top">
+      <span class="tc-id">${esc(t.id)}</span>
+      ${statusOf(t)}
+    </div>
+    <div class="tc-name">${esc(t.name)}</div>
+    <div class="prog-wrap">
+      <div class="bar ${barCls}"><i style="width:${Math.round(t.progress * 100)}%"></i></div>
+      <span class="pctv">${Math.round(t.progress * 100)}%</span>
+    </div>
+    <div class="tc-meta">
+      <span><b>类型</b>${esc(t.type)}</span>
+      <span><b>工作流</b>${esc(w ? w.name : t.wf)}</span>
+      <span><b>资源</b>${esc(t.resource)}</span>
+      <span><b>预计剩余</b>${esc(t.eta)}</span>
+    </div>
+    <div class="tc-foot">
+      <span class="who">${esc(t.owner)} · ${esc(t.started)}</span>
+      <span class="tag">已运行 ${esc(minText(tm.elapsed))}</span>
+    </div>
+  </div>`;
+}
+function renderBoard(rows){
+  $('#boardView').innerHTML = COLS.map(c => {
+    const items = rows.filter(t => t.status === c.key);
+    return `
+    <div class="col">
+      <div class="col-head">
+        <span class="tag ${c.cls} dot">${esc(c.name)}</span>
+        <h4>${esc(c.name)}任务</h4>
+        <span class="n">${items.length}</span>
+      </div>
+      <div class="col-body">
+        ${items.length ? items.map(taskCard).join('') : '<div class="empty-col">暂无任务</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderList(rows){
+  $('#taskTable tbody').innerHTML = rows.length ? rows.map(t => {
+    const w = wfOf(t);
+    return `
+    <tr class="clickable ${t.id === state.sel ? 'sel' : ''}" data-task="${esc(t.id)}" data-skey="${esc(skey(t))}">
+      <td class="mono">${esc(t.id)}</td>
+      <td>${esc(t.name)}<div style="color:var(--tx-3);font-size:10.5px">${esc(t.started)}</div></td>
+      <td>${esc(t.type)}</td>
+      <td>${esc(w ? w.name : t.wf)}</td>
+      <td style="min-width:120px"><div style="display:flex;align-items:center;gap:7px"><div class="bar ${t.status === 'success' ? 'ok' : (t.status === 'failed' || t.status === 'timeout') ? 'err' : ''}" style="flex:1"><i style="width:${Math.round(t.progress * 100)}%"></i></div><span class="mono" style="font-size:10.5px">${Math.round(t.progress * 100)}%</span></div></td>
+      <td>${statusOf(t)}</td>
+      <td>${esc(t.resource)}</td>
+      <td>${esc(t.eta)}</td>
+      <td>${esc(t.owner)}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="9"><div class="empty"><div class="ico">⏳</div><h4>没有匹配的任务</h4><p>调整筛选条件或重置后再试</p></div></td></tr>`;
+}
+function renderAll(){
+  const rows = filtered();
+  renderBoard(rows);
+  renderList(rows);
+  $('#fCount').textContent = rows.length + ' 个';
+  renderKPI(rows);
+}
+
+/* ---------- 事件流（由任务状态派生） ---------- */
+function eventsOf(t){
+  const tm = timing(t);
+  const evs = [];
+  evs.push({ t:t.started.slice(11), k:'ok', m:'<b>任务提交</b> · 异步协议已受理，立即返回任务标识 ' + esc(t.id) });
+  if(t.resource && t.resource !== '—'){
+    evs.push({ t:t.started.slice(11), k:'info', m:'<b>资源锁获取</b> · ' + esc(t.resource) + ' 独占锁已获取' });
+  }
+  const polls = Math.max(1, Math.round(t.progress * 4));
+  for(let i = 1; i <= polls; i++){
+    const p = Math.min(100, Math.round(t.progress * 100 * i / polls));
+    evs.push({ t:'', k:'info', m:'<b>' + esc(modeOf(t)) + '</b> · 第 ' + i + ' 次查询，进度 ' + p + '%' });
+  }
+  if(t.status === 'success'){
+    evs.push({ t:'', k:'ok', m:'<b>结果回写</b> · 结果已写入工作流变量池，唤醒下游节点' });
+  } else if(t.status === 'failed'){
+    evs.push({ t:'', k:'err', m:'<b>任务失败</b> · 执行器返回非零退出码，等待失败分诊节点处理' });
+  } else if(t.status === 'timeout'){
+    evs.push({ t:'', k:'err', m:'<b>触发超时</b> · 超过最大执行时长，按策略终止并转人工处理' });
+  } else if(t.status === 'cancelled'){
+    evs.push({ t:'', k:'warn', m:'<b>任务取消</b> · 由人工发起取消，资源锁已释放' });
+  }
+  return evs;
+}
+
+/* ---------- 抽屉：任务详情 ---------- */
+function openTask(id){
+  const t = tasks().find(x => x.id === id);
+  if(!t) return;
+  const w = wfOf(t);
+  const r = resOf(t);
+  const tm = timing(t);
+  const outKeys = ALL_NODES.async_task ? ALL_NODES.async_task.out : ['task_id','submit_status','result_ref'];
+  const html = `
+    <div class="drawer-title">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="tc-id" style="font-family:var(--mono);font-size:11px;color:var(--tx-3)">${esc(t.id)}</span>
+          ${statusOf(t)}
+          <span class="tag">${esc(t.type)}</span>
+        </div>
+        <div style="font-size:14px;font-weight:600;margin-top:7px">${esc(t.name)}</div>
+        <div style="font-size:11px;color:var(--tx-3);margin-top:3px">${esc(t.owner)} · 提交于 ${esc(t.started)}</div>
+      </div>
+      <button class="btn sm ghost" data-dw-close>✕</button>
+    </div>
+    <div style="flex:1;overflow:auto">
+      <div class="dw-sec">
+        <h5>执行进度</h5>
+        <div class="prog-wrap" style="margin-top:2px">
+          <div class="bar ${t.status === 'success' ? 'ok' : (t.status === 'failed' || t.status === 'timeout') ? 'err' : ''}"><i style="width:${Math.round(t.progress * 100)}%"></i></div>
+          <span class="pctv">${Math.round(t.progress * 100)}%</span>
+        </div>
+        <dl class="kv" style="margin-top:11px">
+          <dt>总时长</dt><dd>${esc(minText(tm.total))}</dd>
+          <dt>已运行</dt><dd>${esc(minText(tm.elapsed))}</dd>
+          <dt>预计剩余</dt><dd>${esc(t.eta)}</dd>
+          <dt>异步协议</dt><dd>提交即返回标识 · ${esc(modeOf(t))}</dd>
+          <dt>所属工作流</dt><dd>${esc(w ? w.name : t.wf)}</dd>
+          <dt>发起节点</dt><dd>${esc(t.node)}</dd>
+        </dl>
+      </div>
+
+      <div class="dw-sec">
+        <h5>任务参数 <span class="tag">JSON</span></h5>
+        <div class="code-inline">{
+  "task_id": "${esc(t.id)}",
+  "type": "${esc(t.type)}",
+  "suite": "${esc(t.name)}",
+  "workflow": "${esc(w ? w.id : t.wf)}",
+  "resource": "${esc(t.resource)}",
+  "timeout_sec": ${t.status === 'timeout' ? 3600 : 7200},
+  "max_attempts": 2,
+  "seed": 20261020
+}</div>
+      </div>
+
+      <div class="dw-sec">
+        <h5>提交状态与结果获取引用</h5>
+        <dl class="kv">
+          <dt>提交状态</dt><dd><span class="tag ok">accepted</span> 平台已受理</dd>
+          <dt>结果引用</dt><dd class="mono">//async/tasks/${esc(t.id)}/result</dd>
+          <dt>获取模式</dt><dd>${esc(modeOf(t))}</dd>
+          <dt>持久化</dt><dd>任务状态与结果持久化，平台重启后可恢复${esc(modeOf(t).indexOf('轮询') === 0 ? '轮询' : '事件订阅')}</dd>
+        </dl>
+      </div>
+
+      <div class="dw-sec">
+        <h5>资源锁持有情况</h5>
+        ${r ? `
+        <div class="lock-row">
+          <span class="ico" style="color:var(--brand-400)">🔒</span>
+          <span style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600">${esc(r.name)}</div>
+            <div style="font-size:10.5px;color:var(--tx-3)">${esc(r.type)} · ${esc(r.mode)} · 获取于 ${esc(r.acquired)}</div>
+          </span>
+          ${statusTag(r.state)}
+          <a class="btn xs" href="resources.html">资源锁</a>
+        </div>` : `<div class="notice info"><span class="ico">i</span><span>该任务未持有独占资源锁（${esc(t.resource)}），可并行调度。</span></div>`}
+      </div>
+
+      <div class="dw-sec">
+        <h5>结果回写的工作流变量 <span class="tag">${esc(outKeys.length)} 项</span></h5>
+        <div class="code-inline">${outKeys.map(k => 'tasks.' + t.id + '.' + k + '  =  ' + (k === 'task_id' ? t.id : k === 'submit_status' ? '"accepted"' : '"//async/tasks/' + t.id + '/result"')).join('\n')}</div>
+        <div class="hint" style="font-size:10.5px;color:var(--tx-4);margin-top:5px">回写完成后由汇聚等待节点唤醒下游分支。</div>
+      </div>
+
+      <div class="dw-sec">
+        <h5>事件流</h5>
+        <div class="card" style="background:var(--bg-1)">
+          <div class="card-body tight">
+            <div class="stream">${eventsOf(t).map(e => `
+              <div class="stream-item ${e.k}">
+                <span class="t">${esc(e.t || '······')}</span><span class="dot"></span>
+                <span class="b"><span class="m">${e.m}</span></span>
+              </div>`).join('')}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid var(--line-1);display:flex;gap:8px;flex-wrap:wrap;background:var(--bg-2)">
+      ${t.status === 'running' ? '<button class="btn danger" data-act="cancel" data-id="' + esc(t.id) + '">取消任务</button>' : ''}
+      <button class="btn" data-act="extend" data-id="${esc(t.id)}">延长超时</button>
+      ${w ? '<a class="btn" href="editor.html?wf=' + esc(w.id) + '">查看所属工作流</a>' : ''}
+      <a class="btn ghost" href="resources.html">查看资源锁</a>
+    </div>`;
+
+  const d = openDrawer(html, { wide:true });
+  d.el.querySelector('[data-dw-close]').addEventListener('click', d.close);
+  $$('[data-act]', d.el).forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    const act = b.dataset.act, id = b.dataset.id;
+    if(act === 'cancel') confirmCancel(id);
+    else if(act === 'extend') extendTimeout(id);
+  }));
+}
+
+/* ---------- 操作：取消 / 延长超时 ---------- */
+function confirmCancel(id){
+  const t = tasks().find(x => x.id === id);
+  if(!t) return;
+  openModal(`
+    <div class="modal-head"><h3>取消异步任务</h3><span class="x" data-close>✕</span></div>
+    <div class="modal-body">
+      <div class="notice err" style="margin-bottom:12px">
+        <span class="ico">✕</span>
+        <span>取消后任务将立即终止，<b>已产生的中间结果会被丢弃</b>，持有资源锁将被释放，下游汇聚等待节点会收到「任务取消」信号。</span>
+      </div>
+      <dl class="kv">
+        <dt>任务</dt><dd>${esc(t.id)} · ${esc(t.name)}</dd>
+        <dt>类型</dt><dd>${esc(t.type)}</dd>
+        <dt>当前进度</dt><dd>${Math.round(t.progress * 100)}%</dd>
+        <dt>资源</dt><dd>${esc(t.resource)}</dd>
+        <dt>负责人</dt><dd>${esc(t.owner)}</dd>
+      </dl>
+      <div class="field" style="margin-top:12px"><label>取消原因</label>
+        <select class="select" id="cancelReason">
+          <option>资源紧张，需让出资源</option>
+          <option>被测系统版本回退</option>
+          <option>执行结果已不可信</option>
+          <option>人工误触发</option>
+        </select></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close>再想想</button>
+      <button class="btn danger" id="cancelGo">确认取消任务</button>
+    </div>`).el.querySelector('#cancelGo').addEventListener('click', () => {
+      OVERRIDE[id] = { status:'cancelled' };
+      renderAll();
+      $$('.modal-mask.show').forEach(x => x.remove());
+      toast('任务已取消：' + id + '，资源锁已释放', 'ok');
+    });
+}
+function extendTimeout(id){
+  const t = tasks().find(x => x.id === id);
+  if(!t) return;
+  openModal(`
+    <div class="modal-head"><h3>延长任务超时</h3><span class="x" data-close>✕</span></div>
+    <div class="modal-body">
+      <div class="field"><label>当前最大执行时长</label><input class="input" value="7200 秒（2 小时）" disabled></div>
+      <div class="field"><label>延长后最大执行时长</label>
+        <select class="select" id="extVal">
+          <option value="10800">10800 秒（3 小时）</option>
+          <option value="14400">14400 秒（4 小时）</option>
+          <option value="21600">21600 秒（6 小时）</option>
+        </select></div>
+      <div class="field"><label>超时后的处理策略</label>
+        <select class="select" id="extPolicy">
+          <option>终止任务并转人工处理</option>
+          <option>降级输出部分结果后继续</option>
+          <option>升级为人工审批门</option>
+        </select></div>
+      <div class="notice warn" style="margin-top:4px"><span class="ico">!</span><span>超时时长由平台代码强制执行，不可由模型自行判断。</span></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close>取消</button>
+      <button class="btn primary" id="extGo">确认延长</button>
+    </div>`).el.querySelector('#extGo').addEventListener('click', () => {
+      $$('.modal-mask.show').forEach(x => x.remove());
+      toast('任务 ' + id + ' 的超时时长已延长', 'ok');
+    });
+}
+
+/* ---------- 初始化 ---------- */
+function init(){
+  renderShell('tasks', {
+    title:'异步任务看板', sub:'全局任务看板',
+    actions:'<button class="btn" id="tbRefresh">⟳ 刷新</button><button class="btn primary" id="tbPoll">▶ 恢复轮询</button>'
+  });
+
+  const wfs = Array.from(new Set(tasks().map(t => (wfOf(t) ? wfOf(t).id : t.wf))));
+  $('#fWf').innerHTML = '<option value="all">全部工作流</option>' +
+    wfs.map(id => {
+      const w = WORKFLOWS.find(x => x.id === id);
+      return '<option value="' + esc(id) + '">' + esc(w ? w.name : id) + '</option>';
+    }).join('');
+  const types = Array.from(new Set(tasks().map(t => t.type)));
+  $('#fType').innerHTML = '<option value="all">全部类型</option>' + types.map(t => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('');
+  const res = Array.from(new Set(tasks().map(t => t.resource)));
+  $('#fRes').innerHTML = '<option value="all">全部资源</option>' + res.map(t => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('');
+
+  $('#fWf').addEventListener('change', e => { state.wf = e.target.value; renderAll(); });
+  $('#fType').addEventListener('change', e => { state.type = e.target.value; renderAll(); });
+  $('#fRes').addEventListener('change', e => { state.res = e.target.value; renderAll(); });
+  $('#fSearch').addEventListener('input', e => { state.q = e.target.value.trim().toLowerCase(); renderAll(); });
+  $('#fReset').addEventListener('click', () => {
+    state.wf = 'all'; state.type = 'all'; state.res = 'all'; state.q = '';
+    $('#fWf').value = 'all'; $('#fType').value = 'all'; $('#fRes').value = 'all'; $('#fSearch').value = '';
+    renderAll(); toast('筛选条件已重置', 'info');
+  });
+  initFilter('#fSearch', '#boardView .tcard, #taskTable tbody tr', 'skey');
+
+  $$('#viewSwitch button').forEach(b => b.addEventListener('click', () => {
+    $$('#viewSwitch button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.view = b.dataset.view;
+    $('#boardView').style.display = state.view === 'board' ? '' : 'none';
+    $('#listView').style.display = state.view === 'list' ? '' : 'none';
+  }));
+
+  function onPick(e){
+    const el = e.target.closest('[data-task]');
+    if(!el) return;
+    state.sel = el.dataset.task;
+    history.replaceState(null, '', '?task=' + encodeURIComponent(state.sel));
+    renderAll();
+    openTask(state.sel);
+  }
+  $('#boardView').addEventListener('click', onPick);
+  $('#taskTable tbody').addEventListener('click', onPick);
+
+  $('#tbRefresh').addEventListener('click', () => { renderAll(); toast('任务状态已刷新', 'ok'); });
+  $('#tbPoll').addEventListener('click', () => toast('已恢复所有运行中任务的轮询订阅', 'ok'));
+
+  renderAll();
+  const want = $q.get('task');
+  if(want && tasks().some(t => t.id === want)) openTask(want);
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body></html>

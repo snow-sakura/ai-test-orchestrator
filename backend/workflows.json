@@ -1,0 +1,96 @@
+{
+  "default-workflow": {
+    "id": "default-workflow",
+    "name": "我的第一个测试工作流",
+    "nodes": [
+      {
+        "id": "n1",
+        "label": "开始",
+        "type": "custom",
+        "position": {
+          "x": 80.0,
+          "y": 120.0
+        },
+        "data": {
+          "category": "platform",
+          "label": "开始",
+          "desc": "工作流入口",
+          "status": "success"
+        },
+        "config": {
+          "toolWhitelist": [],
+          "skills": [],
+          "rules": [],
+          "inputBindings": [],
+          "outputSchemaText": "{}"
+        }
+      },
+      {
+        "id": "n2",
+        "label": "需求解析",
+        "type": "custom",
+        "position": {
+          "x": 320.0,
+          "y": 120.0
+        },
+        "data": {
+          "category": "analysis",
+          "label": "需求解析",
+          "desc": "解析需求文档，抽取可测需求点与验收条件",
+          "status": "success"
+        },
+        "config": {
+          "toolWhitelist": [],
+          "skills": [],
+          "rules": [],
+          "inputBindings": [],
+          "outputSchemaText": "{}",
+          "type": "测试分析"
+        }
+      },
+      {
+        "id": "n_mvp5thpb_0j2e",
+        "label": "需求解析",
+        "type": "custom",
+        "position": {
+          "x": 146.00207248442223,
+          "y": 131.15695747246798
+        },
+        "data": {
+          "category": "analysis",
+          "label": "需求解析",
+          "desc": "解析需求文档，抽取可测需求点与验收条件",
+          "status": "pending"
+        },
+        "config": {
+          "toolWhitelist": [
+            "webFetch"
+          ],
+          "skills": [],
+          "rules": [],
+          "inputBindings": [],
+          "outputSchemaText": "{}",
+          "model": "Gemini-2.5-Pro",
+          "temperature": 0.2,
+          "topP": 0.9,
+          "systemPrompt": "你是测试分析智能体，请解析需求并输出结构化需求点",
+          "userPrompt": "",
+          "outputSchema": {},
+          "maxSteps": 10,
+          "timeoutSec": 120,
+          "tokenBudget": 4000,
+          "retry": 1,
+          "asyncMode": false,
+          "resources": []
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "n1",
+        "target": "n2"
+      }
+    ]
+  }
+}

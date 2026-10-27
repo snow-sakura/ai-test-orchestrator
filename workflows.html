@@ -1,0 +1,669 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>工作流 · 智测编排</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>
+  .muted { color: var(--tx-3); }
+  .tbl-wrap { overflow-x: auto; }
+  .tbl-wrap .table { min-width: 1080px; }
+  tr.hl > td { background: rgba(99,102,241,.1) !important; }
+  tr.hl > td:first-child { box-shadow: inset 3px 0 0 var(--brand-500); }
+  tr.flow-row > td { background: var(--bg-0); padding: 14px 16px; }
+  .flow-strip { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .fnode {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 8px; border-radius: 6px;
+    background: var(--bg-2); border: 1px solid var(--line-2);
+    font-size: 11px; color: var(--tx-1); white-space: nowrap;
+  }
+  .fnode .fd { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .farrow { color: var(--tx-4); font-size: 11px; }
+  .fbranch { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--line-2); }
+  .fbranch-l { font-size: 10.5px; color: var(--tx-3); margin-right: 3px; }
+  .pgrid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 12px; }
+  @media (max-width: 1240px) { .pgrid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  .pcard { background: var(--bg-1); border: 1px solid var(--line-1); border-radius: var(--r-lg); padding: 13px 14px; cursor: pointer; transition: border-color .14s var(--ease), background .14s var(--ease); }
+  .pcard:hover { border-color: var(--line-3); background: var(--bg-2); }
+  .pcard.open { border-color: var(--brand-500); box-shadow: var(--sh-brand); }
+  .pcard h4 { margin: 0 0 4px; font-size: 12.5px; font-weight: 600; }
+  .pcard .pmeta { font-size: 10.5px; color: var(--tx-3); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .pcard .pdesc { font-size: 11px; color: var(--tx-3); margin: 7px 0 9px; line-height: 1.5; }
+  .pdetail { display: none; border-top: 1px solid var(--line-1); margin-top: 10px; padding-top: 10px; }
+  .pcard.open .pdetail { display: block; }
+  .tpl { border: 1px solid var(--line-2); border-radius: var(--r-md); padding: 12px 13px; cursor: pointer; background: var(--bg-2); transition: border-color .14s var(--ease), background .14s var(--ease); }
+  .tpl:hover { border-color: var(--line-3); }
+  .tpl.sel { border-color: var(--brand-500); background: rgba(99,102,241,.1); box-shadow: var(--sh-brand); }
+  .tpl h4 { margin: 0 0 4px; font-size: 12.5px; }
+  .tpl .tchain { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 9px; }
+  .tpl .tchain .fnode { font-size: 10.5px; padding: 2px 6px; }
+  .wcard { background: var(--bg-1); border: 1px solid var(--line-1); border-radius: var(--r-lg); padding: 14px 15px; cursor: pointer; transition: border-color .14s var(--ease); }
+  .wcard:hover { border-color: var(--line-3); }
+  .wcard h4 { margin: 0 0 3px; font-size: 13px; }
+  .wgrid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+  @media (max-width: 1240px) { .wgrid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  .wgrid .kv { grid-template-columns: 62px 1fr; font-size: 11.5px; }
+  .mini { font-size: 10.5px; color: var(--tx-3); }
+</style>
+</head><body>
+<div class="app">
+  <a class="brand" href="dashboard.html">
+    <div class="brand-mark">智</div>
+    <div class="brand-text"><b>智测编排</b><span>AI TEST ORCHESTRATOR</span></div>
+  </a>
+  <header class="topbar"></header>
+  <aside class="side"></aside>
+  <main class="main"><div class="page">
+
+    <div class="page-head">
+      <div>
+        <h2>工作流</h2>
+        <p>PRD §3.1 工作流列表 · §8 典型编排范式 —— 统一管理测试流水线的定义、发布与运行</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnPatterns">⑆ 范式说明</button>
+        <button class="btn primary" id="btnNew">＋ 新建工作流</button>
+      </div>
+    </div>
+
+    <div class="grid grid-5" id="statRow" style="margin-bottom:14px"></div>
+
+    <div class="toolbar">
+      <div class="search"><input class="input" id="q" placeholder="搜索名称 / 描述 / 负责人"></div>
+      <div class="sep"></div>
+      <div class="segmented" id="segStatus">
+        <button class="active" data-v="all">全部</button>
+        <button data-v="published">已发布</button>
+        <button data-v="draft">草稿</button>
+      </div>
+      <div class="sep"></div>
+      <select class="select" id="tagFilter" style="width:auto;min-width:118px"></select>
+      <select class="select" id="sortBy" style="width:auto;min-width:118px">
+        <option value="updated">最近更新</option>
+        <option value="runs">运行次数</option>
+        <option value="pass">通过率</option>
+      </select>
+      <div class="topbar-spacer"></div>
+      <div class="segmented" id="segView">
+        <button class="active" data-v="table">表格</button>
+        <button data-v="card">卡片</button>
+      </div>
+      <span class="mini" id="resultCount"></span>
+    </div>
+
+    <div class="card" id="listCard">
+      <div class="card-head">
+        <h3>工作流清单</h3>
+        <span class="sub" id="listSub"></span>
+        <div class="topbar-spacer"></div>
+        <button class="btn sm" id="btnClear">清除筛选</button>
+      </div>
+      <div class="card-body tight" id="listBody"></div>
+    </div>
+
+    <div class="card" style="margin-top:14px" id="patternCard">
+      <div class="card-head">
+        <h3>按范式浏览</h3>
+        <span class="sub">PRD §8 典型编排范式 —— 5 类可复用流程骨架</span>
+      </div>
+      <div class="card-body">
+        <div class="pgrid" id="pgrid"></div>
+      </div>
+    </div>
+
+  </div></main>
+</div>
+<div id="wfMenus"></div>
+<script src="assets/js/app.js"></script>
+<script>
+/* ==========================================================================
+   工作流列表页
+   ========================================================================== */
+
+/* ---- PRD §8 典型编排范式（节点名全部取自 ALL_NODES 真实目录） ---- */
+const PATTERNS = [
+  {
+    id: 'p_cicd', name: '代码变更驱动的 CI/CD 质量门禁', src: 'PRD §8.1',
+    desc: '变更分析 → 风险评级 → 用例生成 → 多类型并行执行 → 门禁裁决',
+    tags: ['CI/CD', '质量门禁'],
+    chain: ['start','impact_analysis','risk_rating','code_change_gen','plan_gate','parallel','join','triage','condition','quality_gate','report_gen','end'],
+    branches: { parallel: ['unit_test_gen','api_test','security_scan','perf_test'], condition: ['reproduce','root_cause','self_heal'] }
+  },
+  {
+    id: 'p_explore', name: '智能探索与大规模异步回归', src: 'PRD §8.2',
+    desc: '策略生成 → 浏览器智能体探索 + 异步大规模回归并行',
+    tags: ['探索测试', '异步'],
+    chain: ['start','strategy_gen','plan_gate','parallel','join','triage','reproduce','root_cause','quality_gate','report_gen','end'],
+    branches: { parallel: ['browser_use','async_task'] }
+  },
+  {
+    id: 'p_mobile', name: '移动端多端回归', src: 'PRD §8.3',
+    desc: '设备 A/B/Web 并行执行，资源锁保证设备独占',
+    tags: ['移动端', '兼容性'],
+    chain: ['start','strategy_gen','parallel','join','compat_test','triage','report_gen','end'],
+    branches: { parallel: ['airtest','airtest','ui_explore'] }
+  },
+  {
+    id: 'p_agent', name: '外部智能体触发按需测试', src: 'PRD §8.4',
+    desc: '外部调用 → 鉴权与审批队列 → 触发工作流 → 异步执行 → 协议回调',
+    tags: ['开放能力', '外部调度'],
+    chain: ['start','approval','mcp_call','async_task','join','end'],
+    branches: {}
+  },
+  {
+    id: 'p_design', name: '需求到用例的测试设计流水线', src: 'PRD §8.5',
+    desc: '需求解析 → 用例生成 → 数据合成 → 充分性评估 → 资产认证',
+    tags: ['测试设计'],
+    chain: ['start','req_parse','case_gen','data_synth','sufficiency','condition','asset_certify','end'],
+    branches: { condition: ['case_gen'] }
+  }
+];
+
+/* 非范式工作流的主流程（同样取自 ALL_NODES 真实节点） */
+const EXTRA_FLOW = {
+  wf_api:  { chain: ['start','api_test','contract_check','db_consistency','triage','quality_gate','report_gen','end'], branches: {} },
+  wf_sec:  { chain: ['start','strategy_gen','parallel','join','triage','quality_gate','report_gen','end'], branches: { parallel: ['security_scan'] } },
+  wf_perf: { chain: ['start','impact_analysis','strategy_gen','perf_test','join','sufficiency','report_gen','end'], branches: {} },
+  wf_a11y: { chain: ['start','ui_explore','a11y_test','visual_regression','triage','report_gen','end'], branches: {} }
+};
+
+const WF_TO_PATTERN = { wf_cicd:'p_cicd', wf_explore:'p_explore', wf_mobile:'p_mobile', wf_design:'p_design' };
+
+/* ---- 页面状态（数据源全部为 app.js 的 Mock 常量） ---- */
+let LIST = WORKFLOWS.map(w => Object.assign({}, w, { tags: w.tags.slice() }));
+let NEW_SEQ = 0;
+const state = { q: '', status: 'all', tag: 'all', sort: 'updated', view: 'table', openFlow: null, selectedTpl: 'p_cicd' };
+
+/* ---- 工具 ---- */
+function flowOf(wf) {
+  if (wf.flow) return wf.flow;
+  if (WF_TO_PATTERN[wf.id]) { const p = PATTERNS.find(x => x.id === WF_TO_PATTERN[wf.id]); return { chain: p.chain, branches: p.branches }; }
+  return EXTRA_FLOW[wf.id] || { chain: ['start','end'], branches: {} };
+}
+function nodeChip(id) {
+  const n = ALL_NODES[id];
+  if (!n) return '<span class="fnode">' + esc(id) + '</span>';
+  const cm = CAT_META[n.cat] || { hex: '#64748b' };
+  return '<span class="fnode" title="' + esc(n.desc) + '"><span class="fd" style="background:' + cm.hex + '"></span>' + esc(n.name) + '</span>';
+}
+function flowStrip(flow) {
+  const main = flow.chain.map(nodeChip).join('<span class="farrow">→</span>');
+  let br = '';
+  Object.keys(flow.branches || {}).forEach(pid => {
+    const ids = flow.branches[pid];
+    if (!ids || !ids.length) return;
+    const label = ALL_NODES[pid] ? ALL_NODES[pid].name : pid;
+    br += '<div class="fbranch"><span class="fbranch-l">' + esc(label) + ' ▸ 分支</span>' +
+      ids.map(nodeChip).join('<span class="farrow">·</span>') + '</div>';
+  });
+  return '<div class="flow-strip">' + main + '</div>' + br;
+}
+function passCls(p) { return p >= 0.9 ? 'ok' : p >= 0.8 ? 'warn' : 'err'; }
+function flowCount(flow) { return flow.chain.length + Object.keys(flow.branches || {}).reduce((a, k) => a + flow.branches[k].length, 0); }
+function patternOf(id) { return PATTERNS.find(p => p.id === id); }
+
+/* ---- 统计卡 ---- */
+function renderStats() {
+  const total = LIST.length;
+  const pub = LIST.filter(w => w.status === 'published').length;
+  const draft = LIST.filter(w => w.status === 'draft').length;
+  const runs = LIST.reduce((a, w) => a + w.runs, 0);
+  const cost = RUNS.reduce((a, r) => a + r.cost, 0);
+  const nodes = LIST.reduce((a, w) => a + w.nodes, 0);
+  const cards = [
+    { k: '工作流总数', v: total, d: '共 ' + nodes + ' 个节点定义', cls: 'brand' },
+    { k: '已发布', v: pub, d: '可被外部调度触发', cls: 'ok' },
+    { k: '草稿', v: draft, d: '编辑中，尚未发布', cls: 'warn' },
+    { k: '累计运行次数', v: runs, d: '含定时与外部触发', cls: 'info' },
+    { k: '累计成本', v: cost, d: '按最近 ' + RUNS.length + ' 次运行统计', cls: '', money: true }
+  ];
+  $('#statRow').innerHTML = cards.map(c =>
+    '<div class="stat"><div class="k">' + esc(c.k) + '</div><div class="v ' + c.cls + '" data-to="' + c.v + '" data-money="' + (c.money ? 1 : 0) + '">0</div><div class="d">' + esc(c.d) + '</div></div>'
+  ).join('');
+  $$('#statRow .v').forEach(el => {
+    const to = parseFloat(el.dataset.to);
+    const isMoney = el.dataset.money === '1';
+    animateNumber(el, to, 700, v => isMoney ? money(v) : num(Math.round(v)));
+  });
+}
+
+/* ---- 筛选与排序 ---- */
+function visibleList() {
+  const q = state.q.toLowerCase();
+  let out = LIST.filter(w => {
+    if (state.status !== 'all' && w.status !== state.status) return false;
+    if (state.tag !== 'all' && w.tags.indexOf(state.tag) < 0) return false;
+    if (q) {
+      const hay = (w.name + ' ' + w.desc + ' ' + w.owner + ' ' + w.tags.join(' ')).toLowerCase();
+      if (hay.indexOf(q) < 0) return false;
+    }
+    return true;
+  });
+  if (state.sort === 'runs') out.sort((a, b) => b.runs - a.runs);
+  else if (state.sort === 'pass') out.sort((a, b) => b.pass - a.pass);
+  else out.sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
+  return out;
+}
+
+/* ---- 列表渲染 ---- */
+function renderList() {
+  const rows = visibleList();
+  $('#resultCount').textContent = rows.length + ' / ' + LIST.length + ' 条';
+  $('#listSub').textContent = state.q || state.status !== 'all' || state.tag !== 'all'
+    ? '已按条件筛选' : '点击行可展开流程范式预览';
+  const body = $('#listBody');
+  if (!rows.length) {
+    body.innerHTML = '<div class="empty"><div class="ico">⌕</div><h4>没有匹配的工作流</h4><p>调整搜索关键词或筛选条件后重试</p><button class="btn sm" onclick="clearFilter()">清除筛选</button></div>';
+    return;
+  }
+  if (state.view === 'card') { body.innerHTML = '<div style="padding:15px"><div class="wgrid">' + rows.map(cardHtml).join('') + '</div></div>'; return; }
+  body.innerHTML = '<div class="tbl-wrap"><table class="table"><thead><tr>' +
+    '<th>名称</th><th>描述</th><th>状态</th><th>标签</th><th>节点</th><th>连线</th><th>运行</th><th>通过率</th><th>负责人</th><th>更新时间</th><th class="actions">操作</th>' +
+    '</tr></thead><tbody>' + rows.map(rowHtml).join('') + '</tbody></table></div>';
+}
+
+function rowHtml(wf) {
+  const flow = flowOf(wf);
+  return '<tr class="clickable" data-wf="' + esc(wf.id) + '">' +
+    '<td><b>' + esc(wf.name) + '</b></td>' +
+    '<td class="muted" style="max-width:230px">' + esc(wf.desc) + '</td>' +
+    '<td>' + statusTag(wf.status) + '</td>' +
+    '<td>' + wf.tags.map(t => '<span class="tag">' + esc(t) + '</span>').join(' ') + '</td>' +
+    '<td class="mono">' + wf.nodes + '</td>' +
+    '<td class="mono">' + wf.edges + '</td>' +
+    '<td class="mono">' + num(wf.runs) + '</td>' +
+    '<td><div style="display:flex;align-items:center;gap:7px"><div class="bar ' + passCls(wf.pass) + '" style="width:52px"><i style="width:' + (wf.pass * 100) + '%"></i></div><span class="mono">' + pct(wf.pass) + '</span></div></td>' +
+    '<td>' + esc(wf.owner) + '</td>' +
+    '<td class="mono">' + esc(wf.updated) + '</td>' +
+    '<td class="actions">' +
+      '<button class="btn xs" data-act="edit" data-wf="' + esc(wf.id) + '">编辑</button>' +
+      '<button class="btn xs" data-act="run" data-wf="' + esc(wf.id) + '">运行</button>' +
+      '<button class="btn xs" data-act="menu" data-mtrigger="m-' + esc(wf.id) + '">⋯</button>' +
+    '</td></tr>' +
+    '<tr class="flow-row" data-flow-for="' + esc(wf.id) + '" hidden><td colspan="11">' +
+      '<div class="mini" style="margin-bottom:8px">流程范式预览 · 只读 · 共 ' + flowCount(flow) + ' 个节点</div>' + flowStrip(flow) +
+    '</td></tr>';
+}
+
+function cardHtml(wf) {
+  const flow = flowOf(wf);
+  return '<div class="wcard" data-wf="' + esc(wf.id) + '">' +
+    '<div style="display:flex;align-items:flex-start;gap:8px"><h4>' + esc(wf.name) + '</h4><div class="topbar-spacer"></div>' + statusTag(wf.status) + '</div>' +
+    '<div class="mini" style="margin:3px 0 8px">' + esc(wf.desc) + '</div>' +
+    '<div class="kv" style="margin-bottom:9px">' +
+      '<dt>节点 / 连线</dt><dd class="mono">' + wf.nodes + ' / ' + wf.edges + '</dd>' +
+      '<dt>运行次数</dt><dd class="mono">' + num(wf.runs) + '</dd>' +
+      '<dt>通过率</dt><dd><div class="bar ' + passCls(wf.pass) + '" style="width:80px;display:inline-block;vertical-align:middle"><i style="width:' + (wf.pass * 100) + '%"></i></div> <span class="mono">' + pct(wf.pass) + '</span></dd>' +
+      '<dt>负责人</dt><dd>' + esc(wf.owner) + '</dd>' +
+      '<dt>更新时间</dt><dd class="mono">' + esc(wf.updated) + '</dd>' +
+    '</div>' +
+    '<div class="mini" style="margin-bottom:5px">主流程</div>' + flowStrip(flow) +
+  '</div>';
+}
+
+/* ---- 行操作菜单（挂在 body 上，避免被 .main 定位裁切） ---- */
+function renderMenus() {
+  const box = $('#wfMenus');
+  box.innerHTML = LIST.map(w => {
+    const m = 'm-' + w.id;
+    return '<div class="menu" id="' + m + '" data-for="' + m + '">' +
+      '<div class="menu-item" data-action="rename" data-wf="' + esc(w.id) + '">✎ 重命名</div>' +
+      '<div class="menu-item" data-action="copy" data-wf="' + esc(w.id) + '">⧉ 复制为草稿</div>' +
+      '<div class="menu-item" data-action="publish" data-wf="' + esc(w.id) + '">' + (w.status === 'published' ? '◌ 取消发布' : '▲ 发布工作流') + '</div>' +
+      '<div class="menu-sep"></div>' +
+      '<div class="menu-item danger" data-action="delete" data-wf="' + esc(w.id) + '">✕ 删除</div>' +
+    '</div>';
+  }).join('');
+}
+
+/* ---- 动作实现 ---- */
+function findWf(id) { return LIST.find(w => w.id === id); }
+function nowStr() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function refreshShell() {
+  const tag = $('.topbar-title .tag');
+  if (tag) tag.textContent = LIST.length + ' 个工作流';
+}
+
+function doEdit(id) { location.href = 'editor.html?wf=' + encodeURIComponent(id); }
+
+function doRun(id) {
+  const wf = findWf(id);
+  if (!wf) return;
+  if (wf.status !== 'published') toast('草稿需先发布才能运行：' + wf.name, 'warn');
+  const run = RUNS.find(r => r.wf === id);
+  toast('已触发运行：' + wf.name + '，正在跳转执行追踪', 'ok');
+  setTimeout(() => { location.href = 'runs.html' + (run ? '?run=' + encodeURIComponent(run.id) : ''); }, 650);
+}
+
+function doRename(id) {
+  const wf = findWf(id);
+  if (!wf) return;
+  const m = openModal(
+    '<div class="modal-head"><h3>重命名工作流</h3><span class="x" data-close>✕</span></div>' +
+    '<div class="modal-body"><div class="field"><label>工作流名称 <span class="req">*</span></label>' +
+    '<input class="input" id="rnInput" value="' + esc(wf.name) + '"><div class="hint">名称会同步更新到列表、顶栏统计与运行记录。</div></div></div>' +
+    '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="rnOk">保存</button></div>'
+  );
+  const inp = $('#rnInput', m.el);
+  setTimeout(() => { inp.focus(); inp.select(); }, 30);
+  $('#rnOk', m.el).addEventListener('click', () => {
+    const v = inp.value.trim();
+    if (!v) { toast('名称不能为空', 'err'); return; }
+    wf.name = v; wf.updated = nowStr();
+    m.close(); renderList(); renderMenus(); renderStats(); refreshShell();
+    toast('已重命名为「' + v + '」', 'ok');
+  });
+}
+
+function doCopy(id) {
+  const wf = findWf(id);
+  if (!wf) return;
+  NEW_SEQ++;
+  const copy = Object.assign({}, wf, {
+    id: 'wf_copy_' + NEW_SEQ,
+    name: wf.name + ' 副本',
+    status: 'draft', runs: 0, pass: wf.pass, updated: nowStr(), owner: '雪 樱',
+    tags: wf.tags.slice()
+  });
+  LIST.unshift(copy);
+  renderList(); renderMenus(); renderStats(); refreshShell();
+  toast('已复制为草稿：' + copy.name, 'ok');
+}
+
+function doPublish(id) {
+  const wf = findWf(id);
+  if (!wf) return;
+  wf.status = wf.status === 'published' ? 'draft' : 'published';
+  wf.updated = nowStr();
+  renderList(); renderMenus(); renderStats(); refreshShell();
+  toast(wf.status === 'published' ? '已发布：' + wf.name : '已取消发布：' + wf.name, wf.status === 'published' ? 'ok' : 'warn');
+}
+
+function doDelete(id) {
+  const wf = findWf(id);
+  if (!wf) return;
+  const m = openModal(
+    '<div class="modal-head"><h3>删除工作流</h3><span class="x" data-close>✕</span></div>' +
+    '<div class="modal-body"><div class="notice err"><span class="ico">!</span><div>即将删除 <b>' + esc(wf.name) + '</b>（' + wf.nodes + ' 个节点 / ' + num(wf.runs) + ' 次运行记录）。<br>此操作不可撤销，历史运行与审计记录仍会保留。</div></div></div>' +
+    '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn danger" id="delOk">确认删除</button></div>'
+  );
+  $('#delOk', m.el).addEventListener('click', () => {
+    LIST = LIST.filter(w => w.id !== id);
+    m.close(); renderList(); renderMenus(); renderStats(); refreshShell();
+    toast('已删除工作流：' + wf.name, 'ok');
+  });
+}
+
+/* ---- 新建工作流（模板选择） ---- */
+function tplCard(p) {
+  const flow = { chain: p.chain, branches: p.branches };
+  return '<div class="tpl" data-tpl="' + p.id + '">' +
+    '<h4>' + esc(p.name) + '</h4>' +
+    '<div class="mini">' + esc(p.src) + ' · ' + flowCount(flow) + ' 个节点 · ' + esc(p.desc) + '</div>' +
+    '<div class="tchain">' + p.chain.map(nodeChip).join('<span class="farrow">→</span>') + '</div>' +
+  '</div>';
+}
+function openTplModal(preset) {
+  if (preset) state.selectedTpl = preset;
+  const m = openModal(
+    '<div class="modal-head"><h3>新建工作流 · 选择编排范式</h3><span class="x" data-close>✕</span></div>' +
+    '<div class="modal-body">' +
+      '<div class="notice info"><span class="ico">i</span><div>选择 PRD §8 的典型编排范式作为起点，创建后为 <b>草稿</b> 状态，可在编排画布中继续调整节点与连线。</div></div>' +
+      '<div class="grid grid-2" style="gap:10px;margin-top:12px" id="tplGrid">' + PATTERNS.map(tplCard).join('') + '</div>' +
+    '</div>' +
+    '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="tplOk">创建草稿</button></div>',
+    { size: 'xwide' }
+  );
+  const grid = $('#tplGrid', m.el);
+  const sync = () => $$('.tpl', grid).forEach(c => c.classList.toggle('sel', c.dataset.tpl === state.selectedTpl));
+  sync();
+  grid.addEventListener('click', e => {
+    const c = e.target.closest('.tpl');
+    if (!c) return;
+    state.selectedTpl = c.dataset.tpl; sync();
+  });
+  $('#tplOk', m.el).addEventListener('click', () => {
+    const p = patternOf(state.selectedTpl);
+    if (!p) { toast('请先选择一个范式', 'err'); return; }
+    NEW_SEQ++;
+    const flow = { chain: p.chain, branches: p.branches };
+    const n = flowCount(flow);
+    const wf = {
+      id: 'wf_new_' + NEW_SEQ, name: p.name, status: 'draft', updated: nowStr(),
+      owner: '雪 樱', nodes: n, edges: Math.max(n - 1, 0), runs: 0, pass: 0,
+      tags: p.tags.slice(), desc: p.desc, flow: flow
+    };
+    LIST.unshift(wf);
+    m.close();
+    state.q = ''; state.status = 'all'; state.tag = 'all'; state.sort = 'updated';
+    $('#q').value = ''; $('#tagFilter').value = 'all';
+    $$('#segStatus button').forEach(b => b.classList.toggle('active', b.dataset.v === 'all'));
+    renderList(); renderMenus(); renderStats(); refreshShell();
+    toast('已创建草稿：' + p.name, 'ok');
+  });
+}
+
+/* ---- 范式浏览区 ---- */
+function renderPatterns() {
+  $('#pgrid').innerHTML = PATTERNS.map(p => {
+    const flow = { chain: p.chain, branches: p.branches };
+    return '<div class="pcard" data-p="' + p.id + '">' +
+      '<h4>' + esc(p.name) + '</h4>' +
+      '<div class="pmeta"><span class="tag brand">' + esc(p.src) + '</span><span class="tag">' + flowCount(flow) + ' 节点</span></div>' +
+      '<div class="pdesc">' + esc(p.desc) + '</div>' +
+      '<div class="pmeta">' + p.tags.map(t => '<span class="tag">' + esc(t) + '</span>').join(' ') + '</div>' +
+      '<div class="pdetail">' +
+        '<div class="mini" style="margin-bottom:6px">步骤链</div>' + flowStrip(flow) +
+        '<div style="display:flex;gap:6px;margin-top:11px">' +
+          '<button class="btn sm" data-act="tpl-create" data-p="' + p.id + '">以此创建工作流</button>' +
+          '<button class="btn sm ghost" data-act="tpl-use" data-p="' + p.id + '">用此范式筛选</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+/* ---- 工作流详情抽屉 ---- */
+function openWfDrawer(id) {
+  const wf = findWf(id);
+  if (!wf) return;
+  const flow = flowOf(wf);
+  const runs = RUNS.filter(r => r.wf === id);
+  const last = runs[0];
+  const d = openDrawer(
+    '<div class="card-head"><h3>' + esc(wf.name) + '</h3><div class="topbar-spacer"></div>' + statusTag(wf.status) + '<span class="x" data-close style="cursor:pointer;color:var(--tx-3)">✕</span></div>' +
+    '<div class="card-body" style="overflow-y:auto">' +
+      '<div class="mini" style="margin-bottom:10px">' + esc(wf.desc) + '</div>' +
+      '<div class="grid grid-2" style="gap:8px;margin-bottom:14px">' +
+        '<div class="stat"><div class="k">运行次数</div><div class="v info">' + num(wf.runs) + '</div></div>' +
+        '<div class="stat"><div class="k">通过率</div><div class="v ' + (wf.pass >= 0.9 ? 'ok' : 'warn') + '">' + pct(wf.pass) + '</div></div>' +
+      '</div>' +
+      '<div class="mini" style="margin-bottom:6px">主流程（' + flowCount(flow) + ' 节点）</div>' +
+      '<div style="margin-bottom:14px">' + flowStrip(flow) + '</div>' +
+      '<div class="mini" style="margin-bottom:6px">基本信息</div>' +
+      '<dl class="kv" style="margin-bottom:14px">' +
+        '<dt>工作流 ID</dt><dd class="mono">' + esc(wf.id) + '</dd>' +
+        '<dt>状态</dt><dd>' + statusTag(wf.status) + '</dd>' +
+        '<dt>标签</dt><dd>' + wf.tags.map(t => '<span class="tag">' + esc(t) + '</span>').join(' ') + '</dd>' +
+        '<dt>节点 / 连线</dt><dd class="mono">' + wf.nodes + ' / ' + wf.edges + '</dd>' +
+        '<dt>负责人</dt><dd>' + esc(wf.owner) + '</dd>' +
+        '<dt>更新时间</dt><dd class="mono">' + esc(wf.updated) + '</dd>' +
+        '<dt>最近运行</dt><dd>' + (last ? '<a href="runs.html?run=' + esc(last.id) + '">' + esc(last.id) + '</a> · ' + esc(last.started) : '暂无运行记录') + '</dd>' +
+      '</dl>' +
+      '<div class="mini" style="margin-bottom:6px">最近运行</div>' +
+      (runs.length ? '<div class="stream">' + runs.slice(0, 5).map(r =>
+        '<div class="stream-item ' + (r.status === 'success' ? 'ok' : r.status === 'failed' ? 'err' : 'info') + '"><span class="dot"></span>' +
+        '<div class="b"><div class="m"><b>' + esc(r.id) + '</b> · ' + esc(r.trigger) + ' · ' + esc(r.started) + '</div>' +
+        '<div class="mini">' + esc(r.ver) + ' · 耗时 ' + esc(r.dur) + ' · 成本 ' + money(r.cost) + ' · 门禁 ' + esc(r.gate) + '</div></div></div>'
+      ).join('') + '</div>' : '<div class="mini">暂无运行记录</div>') +
+    '</div>' +
+    '<div class="modal-foot" style="border-top:1px solid var(--line-1)">' +
+      '<button class="btn" data-dw="edit">编辑编排</button>' +
+      '<button class="btn" data-dw="copy">复制</button>' +
+      '<button class="btn ' + (wf.status === 'published' ? 'warn' : 'ok') + '" data-dw="publish">' + (wf.status === 'published' ? '取消发布' : '发布') + '</button>' +
+      '<button class="btn primary" data-dw="run">运行</button>' +
+    '</div>',
+    { wide: true }
+  );
+  d.el.addEventListener('click', e => {
+    const b = e.target.closest('[data-dw]');
+    if (!b) return;
+    const act = b.dataset.dw;
+    if (act === 'edit') { d.close(); doEdit(id); }
+    else if (act === 'copy') { d.close(); doCopy(id); }
+    else if (act === 'publish') { doPublish(id); d.close(); }
+    else if (act === 'run') { d.close(); doRun(id); }
+  });
+  $('.x', d.el).addEventListener('click', () => d.close());
+}
+
+/* ---- 事件绑定 ---- */
+function clearFilter() {
+  state.q = ''; state.status = 'all'; state.tag = 'all';
+  $('#q').value = ''; $('#tagFilter').value = 'all';
+  $$('#segStatus button').forEach(b => b.classList.toggle('active', b.dataset.v === 'all'));
+  renderList();
+}
+window.clearFilter = clearFilter;
+
+function bind() {
+  $('#q').addEventListener('input', e => { state.q = e.target.value.trim(); renderList(); });
+  $('#segStatus').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.status = b.dataset.v;
+    $$('#segStatus button').forEach(x => x.classList.toggle('active', x === b));
+    renderList();
+  });
+  $('#segView').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.view = b.dataset.v;
+    $$('#segView button').forEach(x => x.classList.toggle('active', x === b));
+    renderList();
+  });
+  $('#tagFilter').addEventListener('change', e => { state.tag = e.target.value; renderList(); });
+  $('#sortBy').addEventListener('change', e => { state.sort = e.target.value; renderList(); });
+  $('#btnClear').addEventListener('click', () => { clearFilter(); toast('已清除筛选条件', 'ok'); });
+  $('#btnNew').addEventListener('click', () => openTplModal(null));
+  $('#btnPatterns').addEventListener('click', () => {
+    $('#patternCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast('已定位到 PRD §8 编排范式区', 'ok');
+  });
+
+  /* 列表区域事件委托 */
+  $('#listBody').addEventListener('click', e => {
+    const act = e.target.closest('[data-act]');
+    if (act) {
+      const id = act.dataset.wf;
+      /* 菜单触发器不阻断冒泡，交由文档级菜单控制器处理 */
+      if (act.dataset.act === 'menu') return;
+      e.stopPropagation();
+      if (act.dataset.act === 'edit') doEdit(id);
+      else if (act.dataset.act === 'run') doRun(id);
+      return;
+    }
+    const card = e.target.closest('[data-wf]');
+    if (!card) return;
+    const id = card.dataset.wf;
+    if (state.view === 'card') { openWfDrawer(id); return; }
+    toggleFlow(id);
+  });
+
+  /* 菜单动作 */
+  document.addEventListener('click', e => {
+    const item = e.target.closest('.menu-item[data-action]');
+    if (!item) return;
+    const menu = item.closest('.menu');
+    if (menu) menu.classList.remove('show');
+    const id = item.dataset.wf;
+    if (item.dataset.action === 'rename') doRename(id);
+    else if (item.dataset.action === 'copy') doCopy(id);
+    else if (item.dataset.action === 'publish') doPublish(id);
+    else if (item.dataset.action === 'delete') doDelete(id);
+  });
+
+  /* 行内下拉菜单（页面内自行定位，样式复用 .menu / .menu-item） */
+  document.addEventListener('click', e => {
+    const trig = e.target.closest('[data-mtrigger]');
+    const shown = $$('.menu.show');
+    if (!trig) { shown.forEach(m => m.classList.remove('show')); return; }
+    shown.forEach(m => { if (m.id !== trig.dataset.mtrigger) m.classList.remove('show'); });
+    const menu = document.getElementById(trig.dataset.mtrigger);
+    if (!menu) return;
+    const r = trig.getBoundingClientRect();
+    menu.style.top = (r.bottom + 5) + 'px';
+    menu.style.left = Math.min(r.left, window.innerWidth - (menu.offsetWidth || 160) - 12) + 'px';
+    menu.classList.toggle('show');
+  });
+
+  /* 范式卡片 */
+  $('#pgrid').addEventListener('click', e => {
+    const ab = e.target.closest('[data-act]');
+    if (ab) {
+      e.stopPropagation();
+      const pid = ab.dataset.p;
+      if (ab.dataset.act === 'tpl-create') { openTplModal(pid); return; }
+      if (ab.dataset.act === 'tpl-use') {
+        const p = patternOf(pid);
+        const tag = p.tags[0];
+        state.tag = tag; $('#tagFilter').value = tag;
+        state.q = ''; $('#q').value = '';
+        state.status = 'all'; $$('#segStatus button').forEach(b => b.classList.toggle('active', b.dataset.v === 'all'));
+        renderList();
+        toast('已按范式「' + p.name + '」筛选（标签：' + tag + '）', 'ok');
+        $('#listCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+    }
+    const card = e.target.closest('.pcard');
+    if (card) card.classList.toggle('open');
+  });
+}
+
+function toggleFlow(id) {
+  const row = $('tr[data-flow-for="' + id + '"]');
+  if (!row) return;
+  const willOpen = row.hidden;
+  $$('tr.flow-row').forEach(r => { r.hidden = true; });
+  row.hidden = !willOpen;
+  state.openFlow = willOpen ? id : null;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  /* 标签筛选项来自 WORKFLOWS 的真实标签集合 */
+  const tags = Array.from(new Set(LIST.flatMap(w => w.tags)));
+  $('#tagFilter').innerHTML = '<option value="all">全部标签</option>' + tags.map(t => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('');
+
+  renderShell('workflows', {
+    title: '工作流',
+    sub: LIST.length + ' 个工作流',
+    actions: '<button class="btn" id="btnTopNew">＋ 新建工作流</button>'
+  });
+  $('#btnTopNew').addEventListener('click', () => openTplModal(null));
+
+  renderStats();
+  renderList();
+  renderMenus();
+  renderPatterns();
+  bind();
+
+  /* URL 参数定位：workflows.html?wf=wf_cicd */
+  const qp = new URLSearchParams(location.search);
+  const target = qp.get('wf');
+  if (target) {
+    const wf = findWf(target);
+    if (wf) {
+      const tr = $('tr[data-wf="' + target + '"]');
+      if (tr) { tr.classList.add('hl'); tr.scrollIntoView({ block: 'center' }); }
+      toggleFlow(target);
+      openWfDrawer(target);
+      toast('已定位工作流：' + wf.name, 'ok');
+    } else {
+      toast('未找到工作流：' + target, 'err');
+    }
+  }
+});
+</script>
+</body></html>

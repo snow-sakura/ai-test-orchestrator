@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>总览 · 智测编排</title>
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+
+<div class="app">
+  <a class="brand" href="dashboard.html">
+    <div class="brand-mark">智</div>
+    <div class="brand-text"><b>智测编排</b><span>AI TEST ORCHESTRATOR</span></div>
+  </a>
+  <header class="topbar"></header>
+  <aside class="side"></aside>
+
+  <main class="main">
+    <div class="page">
+
+      <div class="page-head">
+        <div>
+          <h2>下午好，雪 樱</h2>
+          <p>今天有 3 个异步任务在运行，1 条质量门禁待裁决，1 个认证资产需要重新认证。</p>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btn-quick-run">⏱ 快速运行</button>
+          <button class="btn primary" id="btn-new">+ 新建工作流</button>
+        </div>
+      </div>
+
+      <!-- ===== 核心指标 ===== -->
+      <div class="grid grid-5" style="margin-bottom:16px">
+        <div class="stat">
+          <div class="k">工作流总数</div>
+          <div class="v brand" id="s-wf">0</div>
+          <div class="d"><span class="tag ok">6 已发布</span> <span class="tag">2 草稿</span></div>
+        </div>
+        <div class="stat">
+          <div class="k">今日运行</div>
+          <div class="v" id="s-runs">0</div>
+          <div class="d">较昨日 <span style="color:var(--ok-400)">+18%</span></div>
+        </div>
+        <div class="stat">
+          <div class="k">门禁通过率</div>
+          <div class="v ok" id="s-pass">0%</div>
+          <div class="d">近 30 天 · 128 次运行</div>
+        </div>
+        <div class="stat">
+          <div class="k">Token 消耗</div>
+          <div class="v info" id="s-tok">0</div>
+          <div class="d">今日成本 <span id="s-cost">$0</span></div>
+        </div>
+        <div class="stat">
+          <div class="k">待处理事项</div>
+          <div class="v warn" id="s-todo">0</div>
+          <div class="d">审批 · 告警 · 资产失效</div>
+        </div>
+      </div>
+
+      <div class="grid grid-side" style="margin-bottom:16px">
+        <!-- ===== 最近运行 ===== -->
+        <div class="card">
+          <div class="card-head">
+            <h3>最近运行</h3>
+            <span class="sub">按时间倒序</span>
+            <a href="runs.html" class="btn xs" style="margin-left:auto">全部记录 →</a>
+          </div>
+          <div class="card-body tight">
+            <table class="table" id="tbl-runs">
+              <thead><tr>
+                <th>工作流</th><th>版本</th><th>触发</th><th>状态</th><th>门禁裁决</th><th>耗时</th><th>成本</th><th>时间</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===== 待办 ===== -->
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-head"><h3>待我处理</h3><span class="tag warn" id="todo-n">0</span></div>
+            <div class="card-body tight" id="todo-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>资源占用</h3><a href="resources.html" class="btn xs" style="margin-left:auto">资源池 →</a></div>
+            <div class="card-body tight">
+              <table class="table">
+                <thead><tr><th>资源</th><th>类型</th><th>持有者</th><th>状态</th></tr></thead>
+                <tbody id="tb-res"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 编排范式 ===== -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-head">
+          <h3>从编排范式开始</h3>
+          <span class="sub">PRD §8 典型编排范式 · 覆盖测试全生命周期</span>
+          <a href="workflows.html" class="btn xs" style="margin-left:auto">全部工作流 →</a>
+        </div>
+        <div class="card-body">
+          <div class="grid grid-3" id="paradigms"></div>
+        </div>
+      </div>
+
+      <!-- ===== 平台能力 ===== -->
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-head"><h3>认证资产库</h3><span class="sub">可复用、可版本化</span></div>
+          <div class="card-body">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">
+              <span style="font-size:28px;font-weight:650;font-family:var(--mono)">8</span>
+              <span style="color:var(--tx-3);font-size:12px">项资产 · 6 项已认证</span>
+            </div>
+            <div class="notice warn" style="margin-bottom:12px">
+              <span class="ico">!</span>
+              <div><b>AST-1027 登录与验证码风控能力包</b> 因被测系统重大变更可能失效，需重新认证或降级为普通资产。</div>
+            </div>
+            <a class="btn sm block" href="assets.html">打开资产库</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>异步任务</h3><span class="sub">长任务不阻塞分支</span></div>
+          <div class="card-body">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">
+              <span style="font-size:28px;font-weight:650;font-family:var(--mono)">3</span>
+              <span style="color:var(--tx-3);font-size:12px">个运行中 · 1 个失败 · 1 个超时</span>
+            </div>
+            <div id="task-mini" style="margin-bottom:12px"></div>
+            <a class="btn sm block" href="tasks.html">打开任务看板</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>开放能力</h3><span class="sub">对外可调度</span></div>
+          <div class="card-body">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">
+              <span style="font-size:28px;font-weight:650;font-family:var(--mono)">5</span>
+              <span style="color:var(--tx-3);font-size:12px">项已暴露 · 940 次外部调用</span>
+            </div>
+            <div class="notice info" style="margin-bottom:12px">
+              <span class="ico">ⓘ</span>
+              <div>执行类操作默认进入<b>待审批队列</b>，审批通过后放行；外部调用与内部运行共享同一审计账本。</div>
+            </div>
+            <a class="btn sm block" href="capabilities.html">打开服务控制台</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="toast-wrap"></div>
+
+<script src="assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  renderShell('dashboard', {
+    title: '总览',
+    sub: 'AI 测试智能体工作流编排平台',
+    actions:
+      '<div class="topbar-group"><button class="btn ghost" onclick="location.href=\'runs.html\'">⏱ 执行追踪</button></div>' +
+      '<div class="topbar-group"><button class="btn ghost" onclick="location.href=\'audit.html\'">🛡 审计账本</button></div>' +
+      '<div class="topbar-group"><button class="btn primary" onclick="location.href=\'editor.html\'">◈ 打开编排画布</button></div>'
+  });
+
+  /* ---- 指标 ---- */
+  animateNumber(document.getElementById('s-wf'), 8);
+  animateNumber(document.getElementById('s-runs'), 23);
+  animateNumber(document.getElementById('s-pass'), 86.4, 900, function (v) { return v.toFixed(1) + '%'; });
+  animateNumber(document.getElementById('s-tok'), 1248093);
+  document.getElementById('s-cost').textContent = '$18.64';
+  animateNumber(document.getElementById('s-todo'), 5);
+
+  /* ---- 最近运行 ---- */
+  var tb = document.querySelector('#tbl-runs tbody');
+  tb.innerHTML = RUNS.slice(0, 6).map(function (r) {
+    return '<tr class="clickable" data-run="' + r.id + '">' +
+      '<td><div style="font-weight:500">' + esc(r.wfName) + '</div>' +
+      '<div style="font-size:10.5px;color:var(--tx-4);margin-top:1px">' + esc(r.branch) + '</div></td>' +
+      '<td class="mono">' + esc(r.ver) + '</td>' +
+      '<td><span style="color:var(--tx-3)">' + r.triggerIcon + '</span> ' + esc(r.trigger) + '</td>' +
+      '<td>' + statusTag(r.status) + '</td>' +
+      '<td>' + (r.gate === '—' ? '<span style="color:var(--tx-4)">—</span>' :
+        r.gate === '通过' ? '<span class="tag ok">通过</span>' :
+        r.gate === '有条件通过' ? '<span class="tag warn">有条件通过</span>' : '<span class="tag err">阻断</span>') + '</td>' +
+      '<td class="mono">' + esc(r.dur) + '</td>' +
+      '<td class="mono">' + money(r.cost) + '</td>' +
+      '<td class="mono" style="color:var(--tx-3)">' + esc(r.started.slice(5)) + '</td></tr>';
+  }).join('');
+  tb.querySelectorAll('tr').forEach(function (tr) {
+    tr.addEventListener('click', function () { location.href = 'runs.html?run=' + tr.dataset.run; });
+  });
+
+  /* ---- 待办 ---- */
+  var todos = [
+    { t: '质量门禁待裁决', d: '订单支付链路 · 存在 1 项 P1 缺陷未确认', tag: 'err', link: 'runs.html?run=run_20261020_1642', act: '去裁决' },
+    { t: '人工审批待处理', d: '计划确认门 · 订单支付链路，提交人 李明', tag: 'warn', link: 'runs.html?run=run_20261020_1642', act: '去审批' },
+    { t: '认证资产可能失效', d: 'AST-1027 登录与验证码风控能力包 v1.9', tag: 'warn', link: 'assets.html?asset=AST-1027', act: '重新认证' },
+    { t: '外部调用待审批', d: 'dev-bot 请求执行「缺陷单写入」', tag: 'info', link: 'capabilities.html', act: '处理' },
+    { t: '异步任务超时', d: 'TSK-9F11 压测基线采集 — 常态流量', tag: 'err', link: 'tasks.html?task=TSK-9F11', act: '查看' }
+  ];
+  document.getElementById('todo-n').textContent = todos.length;
+  document.getElementById('todo-list').innerHTML = todos.map(function (x) {
+    return '<div class="stream-item ' + (x.tag === 'err' ? 'err' : x.tag === 'warn' ? 'warn' : 'info') + '">' +
+      '<span class="dot"></span>' +
+      '<div class="b"><div class="m"><b>' + esc(x.t) + '</b></div>' +
+      '<div style="color:var(--tx-3);font-size:11px;margin-top:1px">' + esc(x.d) + '</div>' +
+      '<a href="' + x.link + '" style="font-size:11px;display:inline-block;margin-top:4px">' + esc(x.act) + ' →</a></div></div>';
+  }).join('');
+
+  /* ---- 资源占用 ---- */
+  document.getElementById('tb-res').innerHTML = RESOURCES.slice(0, 5).map(function (r) {
+    return '<tr class="clickable" onclick="location.href=\'resources.html\'"><td class="mono">' + esc(r.name) + '</td>' +
+      '<td style="color:var(--tx-3)">' + esc(r.type) + '</td>' +
+      '<td style="font-size:11px">' + esc(r.holder) + '</td>' +
+      '<td>' + statusTag(r.state) + '</td></tr>';
+  }).join('');
+
+  /* ---- 异步任务缩略 ---- */
+  document.getElementById('task-mini').innerHTML = TASKS.filter(function (t) { return t.status === 'running'; }).map(function (t) {
+    return '<div style="margin-bottom:9px">' +
+      '<div style="display:flex;font-size:11.5px;margin-bottom:4px"><span>' + esc(t.name) + '</span>' +
+      '<span style="margin-left:auto;font-family:var(--mono);color:var(--tx-3)">' + Math.round(t.progress * 100) + '%</span></div>' +
+      '<div class="bar"><i style="width:' + (t.progress * 100) + '%"></i></div></div>';
+  }).join('');
+
+  /* ---- 编排范式 ---- */
+  var PAR = [
+    { n: '代码变更驱动的 CI/CD 质量门禁', s: '变更分析 → 风险评级 → 用例生成 → 多类型并行执行 → 确定性门禁裁决', tag: 'CI/CD', wf: 'wf_cicd', c: 'var(--cat-design)' },
+    { n: '智能探索与大规模异步回归', s: '策略生成 → 浏览器智能体探索 ‖ 异步大规模回归 → 汇聚 → 分诊', tag: '探索测试', wf: 'wf_explore', c: 'var(--cat-execute)' },
+    { n: '需求到用例的测试设计流水线', s: '需求解析 → 用例生成 → 数据合成 → 充分性评估 → 资产认证', tag: '测试设计', wf: 'wf_design', c: 'var(--cat-quality)' }
+  ];
+  document.getElementById('paradigms').innerHTML = PAR.map(function (p) {
+    return '<div class="card" style="background:var(--bg-2);cursor:pointer" data-wf="' + p.wf + '">' +
+      '<div class="card-body">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">' +
+      '<span style="width:8px;height:8px;border-radius:2px;background:' + p.c + '"></span>' +
+      '<b style="font-size:13px">' + esc(p.n) + '</b></div>' +
+      '<div style="font-size:11.5px;color:var(--tx-3);line-height:1.6">' + esc(p.s) + '</div>' +
+      '<div style="margin-top:10px;display:flex;align-items:center;gap:8px">' +
+      '<span class="tag">' + esc(p.tag) + '</span>' +
+      '<span class="btn xs" style="margin-left:auto">打开画布 →</span></div></div></div>';
+  }).join('');
+  document.querySelectorAll('#paradigms .card').forEach(function (c) {
+    c.addEventListener('click', function () { location.href = 'editor.html?wf=' + c.dataset.wf; });
+  });
+
+  /* ---- 顶部按钮 ---- */
+  document.getElementById('btn-quick-run').addEventListener('click', function () {
+    openModal(
+      '<div class="modal-head"><h3>快速运行</h3><span class="x" data-close>×</span></div>' +
+      '<div class="modal-body">' +
+      '  <div class="field"><label>选择工作流</label><select class="select" id="qr-wf">' +
+      WORKFLOWS.map(function (w) { return '<option>' + esc(w.name) + '</option>'; }).join('') + '</select></div>' +
+      '  <div class="field"><label>触发参数</label><textarea class="textarea" id="qr-params" style="font-family:var(--mono);font-size:11.5px">{\n  "branch": "feature/order-refactor",\n  "changed_files": 12\n}</textarea></div>' +
+      '  <div class="notice info"><span class="ico">ⓘ</span><div>快速运行会先执行结构校验，存在阻断性问题时将拒绝启动。</div></div>' +
+      '</div>' +
+      '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="qr-ok">开始运行</button></div>'
+    ).el.querySelector('#qr-ok').addEventListener('click', function () {
+      toast('已提交运行，正在调度工作流…', 'ok');
+      setTimeout(function () { location.href = 'runs.html'; }, 800);
+    });
+  });
+
+  document.getElementById('btn-new').addEventListener('click', function () { location.href = 'workflows.html'; });
+});
+</script>
+</body>
+</html>

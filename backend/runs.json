@@ -1,0 +1,219 @@
+{
+  "run_seed_001": {
+    "id": "run_seed_001",
+    "workflow_id": "default-workflow",
+    "workflow_name": "我的第一个测试工作流",
+    "trigger": "手动",
+    "status": "completed",
+    "started": "10-26 16:42:00",
+    "duration": "2s08ms",
+    "tokens": 1612,
+    "cost": 0.0081,
+    "gate": {
+      "verdict": "通过",
+      "engine": "确定性规则引擎",
+      "narrative": "主要贡献因素为执行通过率与覆盖率"
+    },
+    "node_states": {
+      "n1": "success",
+      "n2": "success"
+    },
+    "timeline": [
+      {
+        "seq": 1,
+        "nodeId": "n1",
+        "label": "开始",
+        "status": "success",
+        "started": "16:42:01",
+        "duration": "0.8s",
+        "tokens": 806,
+        "cost": 0.004,
+        "model": "Claude-Opus-4.5",
+        "input": {
+          "source": "manual",
+          "payload": {
+            "caseId": "TC-2026-1026"
+          }
+        },
+        "reasoning": "工作流入口节点，初始化执行上下文并装载触发参数。",
+        "tools": [],
+        "output": {
+          "context": {
+            "workflow": "default-workflow",
+            "trigger": "手动"
+          }
+        },
+        "evidence": [
+          "trace:n1"
+        ]
+      },
+      {
+        "seq": 2,
+        "nodeId": "n2",
+        "label": "需求解析",
+        "status": "success",
+        "started": "16:42:02",
+        "duration": "1.2s",
+        "tokens": 806,
+        "cost": 0.0041,
+        "model": "Gemini-2.5-Pro",
+        "input": {
+          "binding": "$.n1.context",
+          "payload": {
+            "requirement": "移动端多端回归需求"
+          }
+        },
+        "reasoning": "抽取 3 个可测需求点，1 个隐含边界条件（弱网超时重试）。",
+        "tools": [
+          "webFetch"
+        ],
+        "output": {
+          "requirementPoints": 3,
+          "ambiguities": 0
+        },
+        "evidence": [
+          "log:n2:001",
+          "trace:n2"
+        ]
+      }
+    ],
+    "logs": [
+      {
+        "nodeId": "n1",
+        "msg": "节点「开始」开始执行（模型 Claude-Opus-4.5）",
+        "time": "16:42:01"
+      },
+      {
+        "nodeId": "n1",
+        "msg": "节点「开始」执行成功 · Token 806 · 成本 ¥0.0040",
+        "time": "16:42:02"
+      },
+      {
+        "nodeId": "n2",
+        "msg": "节点「需求解析」开始执行（模型 Gemini-2.5-Pro）",
+        "time": "16:42:02"
+      },
+      {
+        "nodeId": "n2",
+        "msg": "工具调用: webFetch",
+        "time": "16:42:03"
+      },
+      {
+        "nodeId": "n2",
+        "msg": "节点「需求解析」执行成功 · Token 806 · 成本 ¥0.0041",
+        "time": "16:42:03"
+      },
+      {
+        "nodeId": "global",
+        "msg": "工作流执行完毕 · 总 Token 1612 · 总成本 ¥0.0081",
+        "time": "16:42:04"
+      }
+    ],
+    "created": "16:42:00"
+  },
+  "5d037b50-4fb8-46c7-b755-1289bc22ee98": {
+    "id": "5d037b50-4fb8-46c7-b755-1289bc22ee98",
+    "workflow_id": "default-workflow",
+    "workflow_name": "我的第一个测试工作流",
+    "trigger": "手动",
+    "status": "completed",
+    "started": "19:23:57",
+    "duration": "2.0s",
+    "tokens": 1600,
+    "cost": 0.008,
+    "gate": null,
+    "node_states": {
+      "n1": "success",
+      "n2": "success",
+      "n_mvp5thpb_0j2e": "pending"
+    },
+    "timeline": [
+      {
+        "seq": 1,
+        "nodeId": "n1",
+        "label": "开始",
+        "status": "success",
+        "started": "19:23:58",
+        "duration": "1.0s",
+        "tokens": 800,
+        "cost": 0.004,
+        "model": "Claude-Opus-4.5",
+        "input": {
+          "binding": "trigger.payload",
+          "payload": {
+            "workflow": "default-workflow"
+          }
+        },
+        "reasoning": "开始 节点按配置完成模拟推理，输出结构化结果。",
+        "tools": [],
+        "output": {
+          "status": "success",
+          "tokens": 800,
+          "cost": 0.004
+        },
+        "evidence": [
+          "trace:n1:1",
+          "log:n1:1"
+        ],
+        "gate": null
+      },
+      {
+        "seq": 2,
+        "nodeId": "n2",
+        "label": "需求解析",
+        "status": "success",
+        "started": "19:23:59",
+        "duration": "1.0s",
+        "tokens": 800,
+        "cost": 0.004,
+        "model": "Claude-Opus-4.5",
+        "input": {
+          "binding": "$.n2.input",
+          "payload": {
+            "workflow": "default-workflow"
+          }
+        },
+        "reasoning": "需求解析 节点按配置完成模拟推理，输出结构化结果。",
+        "tools": [],
+        "output": {
+          "status": "success",
+          "tokens": 800,
+          "cost": 0.004
+        },
+        "evidence": [
+          "trace:n2:2",
+          "log:n2:2"
+        ],
+        "gate": null
+      }
+    ],
+    "logs": [
+      {
+        "nodeId": "n1",
+        "msg": "节点「开始」开始执行（模型 Claude-Opus-4.5）",
+        "time": "now"
+      },
+      {
+        "nodeId": "n1",
+        "msg": "节点「开始」执行成功 · Token 800 · 成本 ¥0.0040",
+        "time": "now"
+      },
+      {
+        "nodeId": "n2",
+        "msg": "节点「需求解析」开始执行（模型 Claude-Opus-4.5）",
+        "time": "now"
+      },
+      {
+        "nodeId": "n2",
+        "msg": "节点「需求解析」执行成功 · Token 800 · 成本 ¥0.0040",
+        "time": "now"
+      },
+      {
+        "nodeId": "global",
+        "msg": "工作流执行完毕 · 总 Token 1600 · 总成本 ¥0.0080",
+        "time": "now"
+      }
+    ],
+    "created": "19:23:59"
+  }
+}

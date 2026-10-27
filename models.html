@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模型与额度 · 智测编排</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>
+  .mono { font-family: var(--mono); font-size: 11.5px; }
+  .cost-row { display: grid; grid-template-columns: 210px 1fr 120px; gap: 14px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line-1); }
+  .cost-row:last-child { border-bottom: 0; }
+  .cost-row .lbl { font-size: 12px; color: var(--tx-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cost-row .val { text-align: right; font-family: var(--mono); font-size: 11.5px; color: var(--tx-3); }
+  .scope-note { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 4px; }
+  .scope-note .sc { border: 1px solid var(--line-1); background: var(--bg-2); border-radius: var(--r-md); padding: 10px 12px; }
+  .scope-note .sc b { font-size: 12px; display: block; margin-bottom: 3px; }
+  .scope-note .sc p { margin: 0; font-size: 11px; color: var(--tx-3); line-height: 1.6; }
+  .usebar { width: 104px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+  .quota-used { display: flex; align-items: center; gap: 8px; }
+  .quota-used .bar { width: 88px; }
+  .tbl-scroll { overflow: auto; max-height: calc(100vh - 320px); }
+  .dim-note { font-size: 11px; color: var(--tx-4); margin: 2px 0 10px; }
+  @media (max-width: 1240px) { .scope-note { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <a class="brand" href="dashboard.html">
+    <div class="brand-mark">智</div>
+    <div class="brand-text"><b>智测编排</b><span>AI TEST ORCHESTRATOR</span></div>
+  </a>
+  <header class="topbar"></header>
+  <aside class="side"></aside>
+  <main class="main"><div class="page">
+
+    <div class="page-head">
+      <div>
+        <h2>模型配置与额度管理</h2>
+        <p>统一管理多供应商模型接入、作用域绑定、采样参数与自然日额度授予。</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnGrantTop">＋ 授予额度</button>
+        <button class="btn" id="btnExportUsage">导出用量报表</button>
+      </div>
+    </div>
+
+    <div class="grid grid-4" id="statRow"></div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="tabs">
+        <div class="tab active" data-tab="cfg">模型配置</div>
+        <div class="tab" data-tab="quota">额度管理</div>
+        <div class="tab" data-tab="cost">成本计量</div>
+      </div>
+
+      <!-- ============ 模型配置 ============ -->
+      <div class="tab-panel active" data-panel="cfg">
+        <div class="toolbar" style="margin:0;border:0;border-bottom:1px solid var(--line-1);border-radius:0">
+          <div class="search"><input class="input" id="mSearch" placeholder="搜索模型 / 供应商"></div>
+          <select class="select" id="mProv" style="width:140px"></select>
+          <select class="select" id="mScopeF" style="width:150px">
+            <option value="">全部作用域</option>
+            <option value="全站默认">全站级</option>
+            <option value="个人配置">个人级</option>
+            <option value="按角色配置">按角色配置</option>
+          </select>
+          <div class="sep"></div>
+          <span class="tag" id="mCount">—</span>
+          <div class="topbar-spacer"></div>
+          <button class="btn sm" id="mReset">重置筛选</button>
+        </div>
+        <div class="tbl-scroll">
+          <table class="table">
+            <thead>
+              <tr>
+                <th data-sort>模型</th>
+                <th data-sort>供应商</th>
+                <th>作用域</th>
+                <th>文本能力</th>
+                <th>视觉能力</th>
+                <th>状态</th>
+                <th data-sort>Temp</th>
+                <th data-sort>Top-P</th>
+                <th>累计用量占比</th>
+                <th data-sort>成本</th>
+              </tr>
+            </thead>
+            <tbody id="modelBody"></tbody>
+          </table>
+        </div>
+        <div class="card-body">
+          <div class="scope-note">
+            <div class="sc">
+              <b>全站级</b>
+              <p>作为全站默认模型。未单独配置的工作流与节点直接继承，影响面覆盖全部成员与所有运行。</p>
+            </div>
+            <div class="sc">
+              <b>个人级</b>
+              <p>仅对当前账号生效，<b>不影响全站默认配置</b>，其他成员与后台调度仍使用全站级模型。</p>
+            </div>
+            <div class="sc">
+              <b>按角色配置</b>
+              <p>绑定到具体节点类型，仅该类节点使用该模型。当前已绑定 <span id="roleBindCnt">0</span> 类节点。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 额度管理 ============ -->
+      <div class="tab-panel" data-panel="quota">
+        <div class="toolbar" style="margin:0;border:0;border-bottom:1px solid var(--line-1);border-radius:0">
+          <div class="search"><input class="input" id="qSearch" placeholder="搜索账号 / 授予人 / 备注"></div>
+          <select class="select" id="qState" style="width:130px">
+            <option value="">全部状态</option>
+            <option value="active">生效中</option>
+            <option value="exhausted">已用尽</option>
+            <option value="revoked">已撤销</option>
+          </select>
+          <div class="sep"></div>
+          <span class="tag" id="qCount">—</span>
+          <div class="topbar-spacer"></div>
+          <button class="btn sm" id="qReset">重置筛选</button>
+        </div>
+        <div class="tbl-scroll">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>账号</th>
+                <th>类型</th>
+                <th data-sort>额度</th>
+                <th>已用</th>
+                <th>授予时间</th>
+                <th>授予人</th>
+                <th>状态</th>
+                <th>备注</th>
+                <th class="actions">操作</th>
+              </tr>
+            </thead>
+            <tbody id="quotaBody"></tbody>
+          </table>
+        </div>
+        <div class="card-body">
+          <div class="notice">
+            <span class="ico">ⓘ</span>
+            <div><b>自然日叠加额度</b>：额度按自然日 00:00 重置，授予的额度在当日有效，可与基础额度叠加；撤销后立即失效且不可恢复，运行中的任务将在下一个检查点被限流。</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 成本计量 ============ -->
+      <div class="tab-panel" data-panel="cost">
+        <div class="toolbar" style="margin:0;border:0;border-bottom:1px solid var(--line-1);border-radius:0">
+          <div class="segmented" id="dimSeg">
+            <button class="active" data-dim="wf">按工作流</button>
+            <button data-dim="node">按节点</button>
+            <button data-dim="user">按用户</button>
+          </div>
+          <div class="sep"></div>
+          <span class="tag" id="costTotal">—</span>
+          <div class="topbar-spacer"></div>
+          <span class="dim-note" id="dimNote"></span>
+        </div>
+        <div class="card-body">
+          <div id="costBox"></div>
+        </div>
+      </div>
+    </div>
+
+  </div></main>
+</div>
+<script src="assets/js/app.js"></script>
+<script>
+/* ================= 本地状态（基于 Mock 副本，可交互变更） ================= */
+const M = {
+  models: MODELS.map(m => Object.assign({}, m)),
+  quotas: QUOTAS.map(q => Object.assign({}, q)),
+  dim: 'wf',
+  q: '', prov: '', scope: ''
+};
+
+/* ================= 工具 ================= */
+function modelStatusTag(s) {
+  return s === 'active' ? '<span class="tag ok dot">已启用</span>' : '<span class="tag err dot">连接异常</span>';
+}
+function quotaTag(s) {
+  const m = { active: ['ok', '生效中'], exhausted: ['err', '已用尽'], revoked: ['', '已撤销'] };
+  const v = m[s] || ['', s];
+  return '<span class="tag ' + v[0] + ' dot">' + v[1] + '</span>';
+}
+function scopeTag(m) {
+  if (m.scope === '全站默认') return '<span class="tag brand">全站级</span>';
+  if (m.scope === '个人配置') return '<span class="tag">个人级</span>';
+  return '<span class="tag violet">按角色 · ' + esc(m.role || '未绑定') + '</span>';
+}
+function todayRuns() { return RUNS.filter(r => r.started.indexOf('2026-10-20') === 0); }
+function nodeRoleOptions(selected) {
+  return Object.keys(CAT_META).map(cat => {
+    const opts = NODE_CATALOG[cat].nodes.map(n =>
+      '<option value="' + esc(n.id) + '"' + (n.id === selected ? ' selected' : '') + '>' + esc(n.name) + '</option>').join('');
+    return '<optgroup label="' + esc(CAT_META[cat].name) + '">' + opts + '</optgroup>';
+  }).join('');
+}
+function nodeName(id) { return (ALL_NODES[id] || {}).name || id; }
+
+/* ================= 统计卡 ================= */
+function renderStats() {
+  const tr = todayRuns();
+  const tokens = tr.reduce((s, r) => s + r.tokens, 0);
+  const cost = tr.reduce((s, r) => s + r.cost, 0);
+  const on = M.models.filter(m => m.status === 'active').length;
+  const byRole = M.models.filter(m => m.scope === '按角色配置').length;
+  const live = M.quotas.filter(q => q.state === 'active');
+  const balance = live.reduce((s, q) => s + (q.amount - q.used), 0);
+  $('#statRow').innerHTML =
+    '<div class="stat"><div class="k">已接入模型数</div><div class="v brand" id="stModels">0</div><div class="d">共 ' + M.models.length + ' 条配置 · ' + byRole + ' 条按角色绑定</div></div>' +
+    '<div class="stat"><div class="k">今日 Token 消耗</div><div class="v" id="stTokens">0</div><div class="d">今日 ' + tr.length + ' 次运行累计</div></div>' +
+    '<div class="stat"><div class="k">今日成本</div><div class="v info" id="stCost">0</div><div class="d">按当前模型单价折算</div></div>' +
+    '<div class="stat"><div class="k">额度可用余额</div><div class="v ok" id="stQuota">0</div><div class="d">生效中 ' + live.length + ' 个账号 · 自然日叠加</div></div>';
+  animateNumber($('#stModels'), on);
+  animateNumber($('#stTokens'), tokens);
+  animateNumber($('#stCost'), cost, 700, v => '$' + v.toFixed(2));
+  animateNumber($('#stQuota'), balance, 700, v => v.toFixed(0) + ' 单位');
+  $('#roleBindCnt').textContent = byRole;
+}
+
+/* ================= 模型配置表 ================= */
+function visibleModels() {
+  const q = M.q.toLowerCase();
+  return M.models.filter(m => {
+    if (M.prov && m.provider !== M.prov) return false;
+    if (M.scope && m.scope !== M.scope) return false;
+    if (q && (m.name + m.provider + m.scope + (m.role || '')).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+}
+function renderModels() {
+  const rows = visibleModels();
+  const tb = $('#modelBody');
+  if (!rows.length) {
+    tb.innerHTML = '<tr><td colspan="10"><div class="empty"><div class="ico">⌕</div><h4>没有匹配的模型配置</h4><p>调整筛选条件，或新增一条模型配置。</p></div></td></tr>';
+  } else {
+    tb.innerHTML = rows.map(m =>
+      '<tr class="clickable" data-id="' + m.id + '">' +
+        '<td><b>' + esc(m.name) + '</b>' + (m.status === 'error' ? ' <span class="tag err">连接异常</span>' : '') + '</td>' +
+        '<td>' + esc(m.provider) + '</td>' +
+        '<td>' + scopeTag(m) + '</td>' +
+        '<td>' + (m.text ? '<span class="tag ok dot">支持</span>' : '<span class="tag">不支持</span>') + '</td>' +
+        '<td>' + (m.vision ? '<span class="tag ok dot">支持</span>' : '<span class="tag">不支持</span>') + '</td>' +
+        '<td>' + modelStatusTag(m.status) + '</td>' +
+        '<td class="mono">' + m.temp + '</td>' +
+        '<td class="mono">' + m.topP + '</td>' +
+        '<td><div class="bar usebar"><i style="width:' + m.used + '%"></i></div><span class="mono">' + m.used + '%</span></td>' +
+        '<td class="mono">' + money(m.cost) + '</td>' +
+      '</tr>').join('');
+  }
+  $('#mCount').textContent = rows.length + ' / ' + M.models.length + ' 条配置';
+  $$('#modelBody tr[data-id]').forEach(tr => tr.addEventListener('click', () => openModelDrawer(tr.dataset.id)));
+}
+
+/* ================= 模型配置抽屉 ================= */
+function openModelDrawer(id) {
+  const m = M.models.find(x => x.id === id);
+  if (!m) return;
+  const opts = MODELS.map(x => '<option value="' + esc(x.name) + '"' + (x.name === m.name ? ' selected' : '') + '>' + esc(x.name) + ' · ' + esc(x.provider) + '</option>').join('');
+  const html =
+    '<div class="card-head"><h3>模型配置</h3><span class="sub mono">' + esc(m.id) + '</span>' +
+      '<span class="tag" style="margin-left:auto">' + esc(m.scope) + '</span></div>' +
+    '<div class="card-body" style="overflow:auto">' +
+      '<div class="field"><label>模型</label><select class="select" id="dModel">' + opts + '</select></div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Temperature</label><input class="input" id="dTemp" type="number" step="0.1" min="0" max="2" value="' + m.temp + '"></div>' +
+        '<div class="field"><label>Top-P</label><input class="input" id="dTopP" type="number" step="0.05" min="0" max="1" value="' + m.topP + '"></div>' +
+      '</div>' +
+      '<div class="field"><label>最大步数</label><input class="input" id="dSteps" type="number" min="1" max="60" value="12">' +
+        '<div class="hint">单次运行允许的最大推理步数，超出即熔断并降级为确定性规则裁决。</div></div>' +
+      '<div class="field"><label>绑定节点类型（仅「按角色配置」生效）</label>' +
+        '<select class="select" id="dRole"><option value="">— 不绑定 —</option>' + nodeRoleOptions(m.roleNode) + '</select>' +
+        '<div class="hint">按角色配置可绑定到具体节点类型；个人级配置不影响全站默认。</div></div>' +
+      '<div class="field"><label>访问密钥</label>' +
+        '<div style="display:flex;gap:8px">' +
+          '<input class="input" id="dKey" type="password" placeholder="sk-live-****3f92" value="" autocomplete="off">' +
+          '<button class="btn" id="dTest" style="flex:none">连接测试</button>' +
+        '</div>' +
+        '<div class="hint">密钥由平台密文托管，界面与日志永不展示明文；连接测试会在沙箱内发起一次最小推理请求。</div></div>' +
+      '<div class="field"><label>当前状态</label><div>' + modelStatusTag(m.status) +
+        ' <span style="color:var(--tx-3);font-size:11.5px">累计成本 ' + money(m.cost) + ' · 用量占比 ' + m.used + '%</span></div></div>' +
+    '</div>' +
+    '<div class="modal-foot">' +
+      '<button class="btn" id="dCancel">取消</button>' +
+      '<button class="btn primary" id="dSave">保存配置</button>' +
+    '</div>';
+
+  const dr = openDrawer(html, { wide: true });
+  $$('.x, [data-close]', dr.el).forEach(b => b.addEventListener('click', dr.close));
+  $('#dCancel', dr.el).addEventListener('click', dr.close);
+
+  $('#dTest', dr.el).addEventListener('click', function () {
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> 测试中…';
+    setTimeout(function () {
+      btn.disabled = false;
+      btn.textContent = '连接测试';
+      if (m.status === 'error') {
+        toast('连接失败 · 鉴权被拒 (401) · 请检查密钥与账户额度', 'err');
+      } else {
+        const lat = 78 + Math.floor(Math.random() * 130);
+        toast('连接成功 · 延迟 ' + lat + 'ms · 端点与密钥均可用', 'ok');
+      }
+    }, 1200);
+  });
+
+  $('#dSave', dr.el).addEventListener('click', function () {
+    m.temp = parseFloat($('#dTemp', dr.el).value) || 0;
+    m.topP = parseFloat($('#dTopP', dr.el).value) || 0;
+    const rn = $('#dRole', dr.el).value;
+    if (rn) { m.roleNode = rn; m.role = nodeName(rn); m.scope = '按角色配置'; }
+    renderModels(); renderStats();
+    toast('模型配置已保存 · ' + m.name + ' · 下次运行时生效', 'ok');
+    dr.close();
+  });
+}
+
+/* ================= 新增模型配置 ================= */
+function openAddModel() {
+  const providers = ['OpenAI', 'Anthropic', '阿里云', 'DeepSeek', '智谱'];
+  const html =
+    '<div class="modal-head"><h3>新增模型配置</h3><span class="x" data-close>✕</span></div>' +
+    '<div class="modal-body">' +
+      '<div class="field"><label>作用域 <span class="req">*</span></label>' +
+        '<select class="select" id="nScope">' +
+          '<option value="全站默认">全站级 · 影响全站默认模型</option>' +
+          '<option value="个人配置">个人级 · 仅当前账号生效</option>' +
+          '<option value="按角色配置">按角色配置 · 绑定具体节点类型</option>' +
+        '</select><div class="hint" id="nScopeHint"></div></div>' +
+      '<div class="field" id="nRoleField" style="display:none"><label>绑定节点类型</label>' +
+        '<select class="select" id="nRole"><option value="">— 请选择 —</option>' + nodeRoleOptions('') + '</select></div>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>供应商</label><select class="select" id="nProvider">' +
+          providers.map(p => '<option>' + esc(p) + '</option>').join('') + '</select></div>' +
+        '<div class="field"><label>模型名称 <span class="req">*</span></label>' +
+          '<input class="input" id="nName" placeholder="例如 gpt-4o-mini"></div>' +
+      '</div>' +
+      '<div class="field"><label>访问密钥</label>' +
+        '<input class="input" id="nKey" type="password" placeholder="sk-live-****3f92" autocomplete="off">' +
+        '<div class="hint">密钥加密存储，界面、日志与导出文件中均不出现明文。</div></div>' +
+      '<div class="field-row-3">' +
+        '<div class="field"><label>Temperature</label><input class="input" id="nTemp" type="number" step="0.1" min="0" max="2" value="0.3"></div>' +
+        '<div class="field"><label>Top-P</label><input class="input" id="nTopP" type="number" step="0.05" min="0" max="1" value="0.9"></div>' +
+        '<div class="field"><label>最大步数</label><input class="input" id="nSteps" type="number" min="1" max="60" value="12"></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="nSubmit">创建配置</button></div>';
+
+  const mo = openModal(html);
+  const hint = {
+    '全站默认': '影响全站默认模型，所有未单独配置的工作流与节点均继承该模型。',
+    '个人配置': '仅对当前账号（雪 樱）生效，不影响全站默认配置与其他成员。',
+    '按角色配置': '绑定到具体节点类型后仅该类节点使用，不影响其他节点的默认模型。'
+  };
+  const scopeSel = $('#nScope', mo.el);
+  const roleField = $('#nRoleField', mo.el);
+  const sync = function () {
+    $('#nScopeHint', mo.el).textContent = hint[scopeSel.value];
+    roleField.style.display = scopeSel.value === '按角色配置' ? '' : 'none';
+  };
+  scopeSel.addEventListener('change', sync);
+  sync();
+
+  $('#nSubmit', mo.el).addEventListener('click', function () {
+    const name = $('#nName', mo.el).value.trim();
+    if (!name) { toast('请填写模型名称', 'err'); $('#nName', mo.el).focus(); return; }
+    const scope = scopeSel.value;
+    const rn = $('#nRole', mo.el).value;
+    if (scope === '按角色配置' && !rn) { toast('请选择要绑定的节点类型', 'err'); return; }
+    const id = 'mdl_new_' + (M.models.length + 1);
+    M.models.push({
+      id: id, name: name, provider: $('#nProvider', mo.el).value, scope: scope,
+      text: true, vision: false, status: 'active', used: 0, cost: 0,
+      temp: parseFloat($('#nTemp', mo.el).value) || 0,
+      topP: parseFloat($('#nTopP', mo.el).value) || 0,
+      role: rn ? nodeName(rn) : '', roleNode: rn || ''
+    });
+    renderModels(); renderStats();
+    toast('模型配置已创建 · ' + name + ' · 将在下次运行时生效', 'ok');
+    mo.close();
+  });
+}
+
+/* ================= 额度管理 ================= */
+function visibleQuotas() {
+  const q = ($('#qSearch').value || '').trim().toLowerCase();
+  const st = $('#qState').value;
+  return M.quotas.filter(x => {
+    if (st && x.state !== st) return false;
+    if (q && (x.account + x.by + (x.note || '') + x.type).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+}
+function renderQuotas() {
+  const rows = visibleQuotas();
+  const tb = $('#quotaBody');
+  if (!rows.length) {
+    tb.innerHTML = '<tr><td colspan="9"><div class="empty"><div class="ico">⌕</div><h4>没有匹配的额度记录</h4><p>调整筛选条件或为账号授予新的额度。</p></div></td></tr>';
+  } else {
+    tb.innerHTML = rows.map(q => {
+      const r = q.amount ? Math.min(100, Math.round(q.used / q.amount * 100)) : 0;
+      const cls = q.state === 'exhausted' ? 'err' : q.state === 'revoked' ? '' : (r >= 80 ? 'warn' : 'ok');
+      return '<tr>' +
+        '<td><span style="display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;background:var(--bg-3);font-size:10px;margin-right:6px">' + esc(q.avatar) + '</span>' + esc(q.account) + '</td>' +
+        '<td><span class="tag">' + esc(q.type) + '</span></td>' +
+        '<td class="mono">' + q.amount + '</td>' +
+        '<td><div class="quota-used"><div class="bar ' + cls + '"><i style="width:' + r + '%"></i></div><span class="mono" style="color:var(--tx-3)">' + q.used + '/' + q.amount + '</span></div></td>' +
+        '<td class="mono">' + esc(q.granted) + '</td>' +
+        '<td>' + esc(q.by) + '</td>' +
+        '<td>' + quotaTag(q.state) + '</td>' +
+        '<td>' + (q.note ? esc(q.note) : '<span style="color:var(--tx-4)">—</span>') + '</td>' +
+        '<td class="actions">' +
+          '<button class="btn xs" data-grant="' + q.id + '">授予额度</button>' +
+          '<button class="btn xs danger" data-revoke="' + q.id + '"' + (q.state === 'revoked' ? ' disabled' : '') + '>撤销</button>' +
+        '</td></tr>';
+    }).join('');
+  }
+  $('#qCount').textContent = rows.length + ' / ' + M.quotas.length + ' 条额度记录';
+  $$('#quotaBody [data-grant]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openGrant(b.dataset.grant); }));
+  $$('#quotaBody [data-revoke]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openRevoke(b.dataset.revoke); }));
+}
+
+function openGrant(qid) {
+  const q = M.quotas.find(x => x.id === qid);
+  if (!q) return;
+  const html =
+    '<div class="modal-head"><h3>授予额度</h3><span class="x" data-close>✕</span></div>' +
+    '<div class="modal-body">' +
+      '<div class="field"><label>账号</label><input class="input" value="' + esc(q.account) + '" disabled></div>' +
+      '<div class="field"><label>额度类型</label><input class="input" value="' + esc(q.type) + '" disabled>' +
+        '<div class="hint">自然日叠加额度：当日有效，可与基础额度叠加使用。</div></div>' +
+      '<div class="field"><label>追加额度 <span class="req">*</span></label>' +
+        '<input class="input" id="gAmt" type="number" min="1" max="500" value="20"></div>' +
+      '<div class="field"><label>备注</label><input class="input" id="gNote" placeholder="例如：大促期间临时扩容"></div>' +
+    '</div>' +
+    '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="gSubmit">确认授予</button></div>';
+  const mo = openModal(html);
+  $('#gSubmit', mo.el).addEventListener('click', function () {
+    const amt = parseInt($('#gAmt', mo.el).value, 10) || 0;
+    if (amt <= 0) { toast('请输入有效的额度数值', 'err'); return; }
+    q.amount += amt;
+    if (q.state === 'exhausted') q.state = 'active';
+    const note = $('#gNote', mo.el).value.trim();
+    q.note = note ? note : (q.note || '');
+    renderQuotas(); renderStats();
+    toast('已向 ' + q.account + ' 授予 ' + amt + ' 单位自然日叠加额度', 'ok');
+    mo.close();
+  });
+}
+
+function openRevoke(qid) {
+  const q = M.quotas.find(x => x.id === qid);
+  if (!q) return;
+  const html =
+    '<div class="modal-head"><h3>撤销额度</h3><span class="x" data-close>✕</span></div>' +
+    '<div class="modal-body">' +
+      '<div class="notice err"><span class="ico">!</span><div>该操作<b>立即生效且不可恢复</b>：撤销后 <b>' + esc(q.account) +
+        '</b> 的自然日叠加额度（' + q.amount + ' 单位）将立即失效，进行中的运行将在下一个检查点被限流。</div></div>' +
+      '<div class="field" style="margin-top:12px"><label>撤销原因 <span class="req">*</span></label>' +
+        '<input class="input" id="rvNote" placeholder="例如：临时额度已使用完毕，回收剩余部分"></div>' +
+    '</div>' +
+    '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn danger" id="rvSubmit">确认撤销</button></div>';
+  const mo = openModal(html);
+  $('#rvSubmit', mo.el).addEventListener('click', function () {
+    const note = $('#rvNote', mo.el).value.trim();
+    if (!note) { toast('请填写撤销原因', 'err'); $('#rvNote', mo.el).focus(); return; }
+    q.state = 'revoked';
+    q.note = note;
+    renderQuotas(); renderStats();
+    toast('额度已撤销 · ' + q.account + ' · 立即失效', 'warn');
+    mo.close();
+  });
+}
+
+/* ================= 成本计量 ================= */
+function costRows() {
+  if (M.dim === 'wf') {
+    const map = new Map();
+    RUNS.forEach(r => {
+      const cur = map.get(r.wf) || { label: r.wfName, value: 0, href: 'workflows.html?wf=' + r.wf };
+      cur.value += r.cost; map.set(r.wf, cur);
+    });
+    return Array.from(map.values());
+  }
+  if (M.dim === 'user') {
+    const map = new Map();
+    RUNS.forEach(r => {
+      const cur = map.get(r.by) || { label: r.by, value: 0, href: null };
+      cur.value += r.cost; map.set(r.by, cur);
+    });
+    return Array.from(map.values());
+  }
+  const cats = Object.keys(CAT_META);
+  const total = cats.reduce((s, c) => s + NODE_CATALOG[c].nodes.length, 0);
+  const map = new Map();
+  cats.forEach(c => map.set(c, { label: CAT_META[c].name, value: 0, href: null, cat: c }));
+  RUNS.forEach(r => cats.forEach(c => {
+    const it = map.get(c);
+    it.value += r.cost * (NODE_CATALOG[c].nodes.length / total);
+  }));
+  return Array.from(map.values());
+}
+function renderCost() {
+  const rows = costRows().sort((a, b) => b.value - a.value);
+  const total = rows.reduce((s, r) => s + r.value, 0);
+  const max = rows.length ? Math.max.apply(null, rows.map(r => r.value)) : 1;
+  const box = $('#costBox');
+  if (!rows.length) { box.innerHTML = '<div class="empty"><div class="ico">◔</div><h4>暂无成本数据</h4><p>产生运行记录后将自动统计。</p></div>'; return; }
+  box.innerHTML = rows.map(r => {
+    const w = max ? (r.value / max * 100).toFixed(1) : 0;
+    const color = r.cat ? CAT_META[r.cat].hex : 'var(--brand-500)';
+    const label = r.href ? '<a href="' + r.href + '">' + esc(r.label) + '</a>' : esc(r.label);
+    return '<div class="cost-row">' +
+      '<div class="lbl" title="' + esc(r.label) + '">' + label + '</div>' +
+      '<div class="bar"><i style="width:' + w + '%;background:' + color + '"></i></div>' +
+      '<div class="val">' + money(r.value) + ' · ' + pct(total ? r.value / total : 0) + '</div>' +
+    '</div>';
+  }).join('');
+  $('#costTotal').textContent = '合计 ' + money(total) + ' · ' + rows.length + ' 项';
+  $('#dimNote').textContent = M.dim === 'wf' ? '点击工作流名称可跳转至工作流详情' :
+    M.dim === 'node' ? '按节点目录结构对每次运行成本折算，仅作趋势参考' : '按运行触发主体归集成本';
+}
+
+/* ================= 初始化 ================= */
+renderShell('models', {
+  title: '模型与额度',
+  sub: 'MODEL & QUOTA',
+  actions: '<button class="btn ghost" id="tbRefresh">↻ 刷新</button><button class="btn primary" id="tbAdd">＋ 新增模型配置</button>'
+});
+$('#tbAdd').addEventListener('click', openAddModel);
+$('#tbRefresh').addEventListener('click', () => { renderStats(); renderModels(); renderQuotas(); renderCost(); toast('模型配置与用量已刷新', 'ok'); });
+$('#btnGrantTop').addEventListener('click', () => openGrant(M.quotas[0].id));
+$('#btnExportUsage').addEventListener('click', () => toast('用量报表已生成 · ' + M.models.length + ' 个模型 · ' + money(todayRuns().reduce((s, r) => s + r.cost, 0)), 'ok'));
+
+$('#mSearch').addEventListener('input', e => { M.q = e.target.value; renderModels(); });
+$('#mProv').addEventListener('change', e => { M.prov = e.target.value; renderModels(); });
+$('#mScopeF').addEventListener('change', e => { M.scope = e.target.value; renderModels(); });
+$('#mReset').addEventListener('click', () => {
+  M.q = ''; M.prov = ''; M.scope = '';
+  $('#mSearch').value = ''; $('#mProv').value = ''; $('#mScopeF').value = '';
+  renderModels(); toast('筛选条件已重置', 'info');
+});
+$('#qSearch').addEventListener('input', renderQuotas);
+$('#qState').addEventListener('change', renderQuotas);
+$('#qReset').addEventListener('click', () => { $('#qSearch').value = ''; $('#qState').value = ''; renderQuotas(); toast('筛选条件已重置', 'info'); });
+
+$('#dimSeg').addEventListener('click', e => {
+  const b = e.target.closest('button[data-dim]');
+  if (!b) return;
+  $$('#dimSeg button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  M.dim = b.dataset.dim;
+  renderCost();
+});
+
+/* 供应商下拉（由 Mock 派生） */
+$('#mProv').innerHTML = '<option value="">全部供应商</option>' +
+  Array.from(new Set(M.models.map(m => m.provider))).map(p => '<option>' + esc(p) + '</option>').join('');
+
+/* URL 参数定位：models.html?model=<id> */
+const qs = new URLSearchParams(location.search);
+if (qs.get('model')) {
+  const target = M.models.find(m => m.id === qs.get('model'));
+  if (target) setTimeout(() => openModelDrawer(target.id), 120);
+}
+
+renderStats();
+renderModels();
+renderQuotas();
+renderCost();
+makeSortable($('#modelBody').closest('table'));
+makeSortable($('#quotaBody').closest('table'));
+</script>
+</body>
+</html>

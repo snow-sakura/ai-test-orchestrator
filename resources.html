@@ -1,0 +1,541 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>资源与锁 · 智测编排</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>
+  .muted { color: var(--tx-3); }
+  .mini { font-size: 10.5px; color: var(--tx-3); }
+  .tbl-wrap { overflow-x: auto; }
+  .tbl-wrap .table { min-width: 1080px; }
+  .ttl { font-family: var(--mono); font-size: 11.5px; }
+  .ttl.warn { color: var(--warn-400); }
+  .ttl.err { color: var(--err-400); }
+  tr.sel > td { background: rgba(99,102,241,.1) !important; }
+  tr.sel > td:first-child { box-shadow: inset 3px 0 0 var(--brand-500); }
+  .stream-item .src { margin-left: auto; flex: none; }
+  .resname { display: flex; align-items: center; gap: 7px; }
+  .resname .rtype { font-size: 10.5px; color: var(--tx-3); }
+  .sw { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; }
+  .sw i { width: 8px; height: 8px; border-radius: 2px; background: var(--ok-500); }
+  .sw.idle i { background: var(--tx-4); }
+  .sw.busy i { background: var(--info-500); }
+  .lockgrid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+  @media (max-width: 1240px) { .lockgrid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  .evkind { font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: 500; }
+  .evkind.a { background: rgba(14,165,233,.14); color: var(--info-400); }
+  .evkind.r { background: rgba(168,85,247,.14); color: var(--violet-500); }
+  .evkind.l { background: rgba(16,185,129,.14); color: var(--ok-400); }
+  .evkind.t { background: rgba(245,158,11,.14); color: var(--warn-400); }
+  .evkind.c { background: rgba(239,68,68,.14); color: var(--err-400); }
+</style>
+</head><body>
+<div class="app">
+  <a class="brand" href="dashboard.html">
+    <div class="brand-mark">智</div>
+    <div class="brand-text"><b>智测编排</b><span>AI TEST ORCHESTRATOR</span></div>
+  </a>
+  <header class="topbar"></header>
+  <aside class="side"></aside>
+  <main class="main"><div class="page">
+
+    <div class="page-head">
+      <div>
+        <h2>资源与锁</h2>
+        <p>PRD §6.2 资源独占管理 —— 资源池声明、锁策略、冲突处理与锁事件审计</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnRefresh">↻ 刷新状态</button>
+        <button class="btn primary" id="btnPolicy">⚙ 冲突处理策略</button>
+      </div>
+    </div>
+
+    <div class="lockgrid" id="statRow" style="margin-bottom:14px"></div>
+
+    <div class="notice" style="margin-bottom:14px">
+      <span class="ico">◈</span>
+      <div>
+        <b>资源池声明：</b>执行节点在配置时声明所需资源类型与数量，平台据此在运行前申请锁、在结束后释放。多个工作流或人工调试共享同一设备 / 环境 / 凭据时，通过锁机制防止资源争抢。
+        <div class="mini" style="margin-top:7px">常见声明示例（节点名取自节点目录）：</div>
+        <div id="declList" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>资源池</h3>
+        <span class="sub" id="resSub"></span>
+        <div class="topbar-spacer"></div>
+        <span class="tag warn dot" id="tickTag">TTL 计时中</span>
+      </div>
+      <div class="card-body tight" id="resBody"></div>
+    </div>
+
+    <div class="grid grid-side" style="margin-top:14px">
+      <div class="card">
+        <div class="card-head">
+          <h3>锁事件流</h3>
+          <span class="sub">acquire / renew / release / timeout / conflict</span>
+        </div>
+        <div class="card-body tight">
+          <div class="stream" id="eventStream" style="max-height:420px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <div class="card" id="policyCard">
+        <div class="card-head">
+          <h3>冲突处理策略</h3>
+          <span class="sub">全站级</span>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <label>资源被占用时的行为</label>
+            <select class="select" id="polMode">
+              <option value="wait">等待排队（节点进入等待队列）</option>
+              <option value="fail">按策略失败（节点直接失败并分流）</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>等待超时（分钟）</label>
+            <input class="input" id="polTimeout" type="number" min="1" max="120" value="15">
+            <div class="hint">超时后触发降级分支。</div>
+          </div>
+          <div class="field">
+            <label>降级分支</label>
+            <select class="select" id="polBranch"></select>
+            <div class="hint">来自控制流节点目录，可作为冲突后的兜底路径。</div>
+          </div>
+          <div class="field">
+            <label>降级后行为</label>
+            <select class="select" id="polAfter">
+              <option value="continue">继续执行（标记告警）</option>
+              <option value="fail">标记该分支失败</option>
+              <option value="manual">转人工处理</option>
+            </select>
+          </div>
+          <label style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--tx-2);margin-bottom:12px">
+            <input type="checkbox" id="polAudit" checked> 锁冲突写入审计账本
+          </label>
+          <button class="btn primary block" id="btnSavePolicy">保存策略</button>
+          <div class="mini" style="margin-top:9px" id="policyState"></div>
+        </div>
+      </div>
+    </div>
+
+  </div></main>
+</div>
+<script src="assets/js/app.js"></script>
+<script>
+/* ==========================================================================
+   资源与锁管理页（PRD §6.2）
+   ========================================================================== */
+
+/* ---- 节点 → 资源声明（示例，节点名取自 ALL_NODES） ---- */
+const DECL = [
+  { node: 'airtest',      res: '设备',       qty: 1, mode: '独占锁' },
+  { node: 'ui_explore',   res: '浏览器容器', qty: 1, mode: '独占锁' },
+  { node: 'browser_use',  res: '浏览器容器', qty: 1, mode: '共享锁' },
+  { node: 'perf_test',    res: '压测集群',   qty: 1, mode: '独占锁' },
+  { node: 'security_scan',res: '扫描集群',   qty: 1, mode: '独占锁' },
+  { node: 'async_task',   res: '资源池',     qty: 1, mode: '共享锁' }
+];
+
+/* ---- 资源状态（源自 RESOURCES） ---- */
+function parseTtl(s) {
+  if (!s || s === '—' || s === '不限') return null;
+  let sec = 0, hit = false;
+  const h = s.match(/(\d+)\s*小时/);
+  const m = s.match(/(\d+)\s*分/);
+  if (h) { sec += parseInt(h[1], 10) * 3600; hit = true; }
+  if (m) { sec += parseInt(m[1], 10) * 60; hit = true; }
+  return hit ? sec : null;
+}
+function fmtTtl(sec) {
+  if (sec === null || sec === undefined) return '不限';
+  if (sec < 0) sec = 0;
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  const p = n => String(n).padStart(2, '0');
+  return h > 0 ? h + ':' + p(m) + ':' + p(s) : p(m) + ':' + p(s);
+}
+function strategyOf(mode) {
+  if (mode.indexOf('共享') >= 0) return 'shared';
+  if (mode.indexOf('自动释放') >= 0) return 'timeout';
+  return 'exclusive';
+}
+let RES = RESOURCES.map(r => {
+  const o = Object.assign({}, r);
+  o.ttlSec = o.state === 'busy' ? parseTtl(o.ttl) : null;
+  o.strategy = strategyOf(o.mode);
+  return o;
+});
+
+/* ---- 锁事件流：账本真实条目 + 派生条目 ---- */
+let EVENTS = [];
+function evTs(d, t) { return d + ' ' + t; }
+function buildEvents() {
+  const out = [];
+  /* 来自 AUDIT 的真实锁事件 */
+  AUDIT.forEach(a => {
+    let res = null, kind = 'acquire';
+    if (a.type === '资源锁') {
+      res = a.target.replace(/^资源池\s*/, '').trim();
+    } else if (a.detail && a.detail.indexOf('资源锁') >= 0) {
+      const m = a.detail.match(/资源锁\s*(\S+)/);
+      if (m) res = m[1].split('/').pop();
+    }
+    if (!res) return;
+    if (a.result === 'acquired') kind = 'acquire';
+    else if (a.result === 'denied') kind = 'conflict';
+    out.push({ ts: a.ts, kind: kind, res: res, who: a.actor, text: a.detail, evt: a.id, src: '账本' });
+  });
+  /* 派生：每个占用中资源的获取事件 */
+  RES.filter(r => r.state === 'busy').forEach(r => {
+    if (out.some(e => e.res === r.name && e.kind === 'acquire')) return;
+    out.push({
+      ts: evTs(r.acquired, ':00'), kind: 'acquire', res: r.name, who: r.holderType || '调度器',
+      text: (r.mode.indexOf('共享') >= 0 ? '共享锁' : '独占锁') + '获取成功' + (r.ttlSec !== null ? '，TTL ' + r.ttl + ' 自动释放' : ''),
+      evt: null, src: '派生'
+    });
+  });
+  /* 派生：续期事件 */
+  RES.filter(r => r.state === 'busy').forEach(r => {
+    out.push({
+      ts: evTs(r.acquired, '05:00'), kind: 'renew', res: r.name, who: r.holderType || '持有方',
+      text: '锁续期成功，TTL 重新计时', evt: null, src: '派生'
+    });
+  });
+  /* 派生：冲突等待事件（独占锁被占用时） */
+  RES.filter(r => r.state === 'busy' && r.mode.indexOf('独占') >= 0).forEach(r => {
+    out.push({
+      ts: evTs(r.acquired, '01:00'), kind: 'conflict', res: r.name, who: '执行节点（排队中）',
+      text: '申请 ' + r.name + ' 失败：资源被独占锁占用，按策略进入等待队列', evt: null, src: '派生'
+    });
+  });
+  /* 派生：空闲资源的释放事件 */
+  const relTimes = { res_2: '13:26:00', res_5: '12:04:00', res_7: '09:48:00' };
+  RES.filter(r => r.state === 'idle').forEach(r => {
+    out.push({
+      ts: evTs('2026-10-20', relTimes[r.id] || '10:00:00'), kind: 'release', res: r.name, who: '资源管理器',
+      text: '锁已释放，资源回到空闲状态', evt: null, src: '派生'
+    });
+  });
+  /* 派生：一次超时自动释放 */
+  out.push({
+    ts: evTs('2026-10-20', '08:41:12'), kind: 'timeout', res: 'mobile-02', who: '资源管理器',
+    text: '锁 TTL 到期自动释放（持有方心跳中断）', evt: null, src: '派生'
+  });
+  out.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+  return out;
+}
+EVENTS = buildEvents();
+
+/* ---- 统计卡 ---- */
+function renderStats() {
+  const total = RES.length;
+  const busy = RES.filter(r => r.state === 'busy').length;
+  const idle = RES.filter(r => r.state === 'idle').length;
+  const conflict = RES.filter(r => r.state === 'busy' && r.mode.indexOf('独占') >= 0).length;
+  const today = EVENTS.filter(e => e.ts.indexOf('2026-10-20') === 0).length;
+  const cards = [
+    { k: '资源总数', v: total, d: '设备 / 集群 / 环境 / 凭据', cls: 'brand' },
+    { k: '占用中', v: busy, d: '已持有锁，正在执行', cls: 'info' },
+    { k: '空闲', v: idle, d: '可被工作流申请', cls: 'ok' },
+    { k: '锁冲突等待', v: conflict, d: '独占资源被占用，节点需排队', cls: 'warn' },
+    { k: '本日锁事件', v: today, d: '含账本与派生事件', cls: '' }
+  ];
+  $('#statRow').innerHTML = cards.map(c =>
+    '<div class="stat"><div class="k">' + esc(c.k) + '</div><div class="v ' + c.cls + '" data-to="' + c.v + '">0</div><div class="d">' + esc(c.d) + '</div></div>'
+  ).join('');
+  $$('#statRow .v').forEach(el => {
+    animateNumber(el, parseFloat(el.dataset.to), 700, v => num(Math.round(v)));
+  });
+}
+
+/* ---- 资源表格 ---- */
+function ttlCell(r) {
+  if (r.state !== 'busy') return '<span class="muted">—</span>';
+  if (r.ttlSec === null) return '<span class="ttl muted">不限</span>';
+  const cls = r.ttlSec <= 300 ? 'err' : r.ttlSec <= 900 ? 'warn' : '';
+  return '<span class="ttl ' + cls + '" data-ttl="' + esc(r.id) + '">' + fmtTtl(r.ttlSec) + '</span>';
+}
+function renderTable() {
+  $('#resSub').textContent = RES.length + ' 项资源 · ' + RES.filter(r => r.state === 'busy').length + ' 项占用中';
+  const rows = RES.map(r =>
+    '<tr class="clickable" data-res="' + esc(r.id) + '">' +
+      '<td><div class="resname"><span class="sw ' + r.state + '"><i></i></span><b>' + esc(r.name) + '</b><span class="rtype">' + esc(r.type) + '</span></div></td>' +
+      '<td class="muted">' + esc(r.type) + '</td>' +
+      '<td><span class="tag' + (r.mode.indexOf('共享') >= 0 ? ' info' : r.mode.indexOf('自动') >= 0 ? ' warn' : '') + '">' + esc(r.mode) + '</span></td>' +
+      '<td class="mono">' + esc(r.holder) + '</td>' +
+      '<td>' + (r.holderType ? '<span class="tag">' + esc(r.holderType) + '</span>' : '<span class="muted">—</span>') + '</td>' +
+      '<td class="mono">' + esc(r.acquired) + '</td>' +
+      '<td>' + ttlCell(r) + '</td>' +
+      '<td>' + statusTag(r.state) + '</td>' +
+      '<td class="actions">' +
+        '<button class="btn xs" data-act="detail" data-res="' + esc(r.id) + '">详情</button>' +
+        '<button class="btn xs" data-act="release" data-res="' + esc(r.id) + '">释放</button>' +
+      '</td>' +
+    '</tr>').join('');
+  $('#resBody').innerHTML = '<div class="tbl-wrap"><table class="table"><thead><tr>' +
+    '<th>资源名称</th><th>类型</th><th>锁模式</th><th>当前持有者</th><th>持有者类型</th><th>获取时间</th><th>TTL 剩余</th><th>状态</th><th class="actions">操作</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+/* ---- 锁事件流 ---- */
+const KIND = {
+  acquire: ['a', '获取'], renew: ['r', '续期'], release: ['l', '释放'],
+  timeout: ['t', '超时'], conflict: ['c', '冲突']
+};
+function renderEvents() {
+  $('#eventStream').innerHTML = EVENTS.map(e => {
+    const k = KIND[e.kind] || ['a', e.kind];
+    const dot = e.kind === 'conflict' ? 'err' : e.kind === 'timeout' ? 'warn' : e.kind === 'release' ? 'ok' : 'info';
+    return '<div class="stream-item ' + dot + '">' +
+      '<span class="t">' + esc(e.ts.slice(5, 19)) + '</span>' +
+      '<span class="dot"></span>' +
+      '<div class="b"><div class="m"><span class="evkind ' + k[0] + '">' + k[1] + '</span> <b>' + esc(e.res) + '</b> · ' + esc(e.who) + ' — ' + esc(e.text) + '</div>' +
+      (e.evt ? '<a class="mini" href="audit.html?evt=' + esc(e.evt) + '">查看审计条目 ' + esc(e.evt) + ' →</a>' : '') +
+      '</div>' +
+      '<span class="src tag">' + esc(e.src) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+/* ---- 资源声明示例 ---- */
+function renderDecl() {
+  $('#declList').innerHTML = DECL.map(d => {
+    const n = ALL_NODES[d.node];
+    if (!n) return '';
+    return '<span class="tag">' + esc(n.name) + ' <span class="muted">需</span> ' + esc(d.res) + ' ×' + d.qty + ' · ' + esc(d.mode) + '</span>';
+  }).join('');
+}
+
+/* ---- 抽屉：锁详情 ---- */
+let openResId = null;
+function openResDrawer(id) {
+  const r = RES.find(x => x.id === id);
+  if (!r) return;
+  openResId = id;
+  const evs = EVENTS.filter(e => e.res === r.name);
+  const audits = AUDIT.filter(a =>
+    (a.type === '资源锁' && a.target.indexOf(r.name) >= 0) ||
+    (a.detail && a.detail.indexOf(r.name) >= 0));
+  const d = openDrawer(
+    '<div class="card-head"><h3>' + esc(r.name) + '</h3><span class="tag">' + esc(r.type) + '</span>' +
+      '<div class="topbar-spacer"></div>' + statusTag(r.state) + '<span class="x" data-close style="cursor:pointer;color:var(--tx-3)">✕</span></div>' +
+    '<div class="card-body" style="overflow-y:auto">' +
+      '<dl class="kv" style="margin-bottom:14px">' +
+        '<dt>资源 ID</dt><dd class="mono">' + esc(r.id) + '</dd>' +
+        '<dt>资源类型</dt><dd>' + esc(r.type) + '</dd>' +
+        '<dt>锁模式</dt><dd><span class="tag' + (r.mode.indexOf('共享') >= 0 ? ' info' : r.mode.indexOf('自动') >= 0 ? ' warn' : '') + '">' + esc(r.mode) + '</span></dd>' +
+        '<dt>当前持有者</dt><dd class="mono">' + esc(r.holder) + '</dd>' +
+        '<dt>持有者类型</dt><dd>' + (r.holderType ? esc(r.holderType) : '<span class="muted">—</span>') + '</dd>' +
+        '<dt>获取时间</dt><dd class="mono">' + esc(r.acquired) + '</dd>' +
+        '<dt>TTL 剩余</dt><dd>' + (r.state === 'busy' ? '<span class="ttl" data-ttl="' + esc(r.id) + '">' + fmtTtl(r.ttlSec) + '</span>' : '<span class="muted">—</span>') + '</dd>' +
+      '</dl>' +
+
+      '<div class="mini" style="margin-bottom:6px">锁策略（演示可切换）</div>' +
+      '<div class="segmented" id="segLock" style="margin-bottom:12px">' +
+        '<button data-v="exclusive" class="' + (r.strategy === 'exclusive' ? 'active' : '') + '">互斥锁</button>' +
+        '<button data-v="shared" class="' + (r.strategy === 'shared' ? 'active' : '') + '">共享锁</button>' +
+        '<button data-v="timeout" class="' + (r.strategy === 'timeout' ? 'active' : '') + '">带超时自动释放</button>' +
+      '</div>' +
+
+      '<div class="mini" style="margin-bottom:6px">持有事件时间线</div>' +
+      (evs.length ? '<div class="timeline" style="margin-bottom:14px">' + evs.map(e => {
+        const k = KIND[e.kind] || ['a', e.kind];
+        const cls = e.kind === 'conflict' ? 'err' : e.kind === 'timeout' ? 'warn' : e.kind === 'release' ? 'ok' : 'run';
+        return '<div class="tl-item ' + cls + '"><h5>' + esc(k[1]) + ' · ' + esc(r.name) + '</h5>' +
+          '<div class="meta">' + esc(e.ts) + ' · ' + esc(e.who) + ' — ' + esc(e.text) + '</div></div>';
+      }).join('') + '</div>' : '<div class="mini" style="margin-bottom:14px">暂无事件</div>') +
+
+      '<div class="mini" style="margin-bottom:6px">审计记录</div>' +
+      (audits.length ? '<div class="stream" style="margin-bottom:14px">' + audits.map(a =>
+        '<div class="stream-item info"><span class="dot"></span><div class="b">' +
+        '<div class="m"><b>' + esc(a.id) + '</b> · ' + esc(a.type) + ' · ' + esc(a.actor) + '</div>' +
+        '<div class="mini">' + esc(a.detail) + '</div>' +
+        '<a class="mini" href="audit.html?evt=' + esc(a.id) + '">在审计账本中查看 →</a></div></div>'
+      ).join('') + '</div>' : '<div class="mini" style="margin-bottom:14px">该资源暂无审计条目</div>') +
+
+      '<div class="notice warn"><span class="ico">!</span><div>强制释放会立即中断持有方的执行，请确认持有方已停止或可安全中断。</div></div>' +
+    '</div>' +
+    '<div class="modal-foot" style="border-top:1px solid var(--line-1)">' +
+      '<button class="btn" data-r="renew">续期 +5 分钟</button>' +
+      '<button class="btn warn" data-r="expire">模拟 TTL 到期</button>' +
+      '<button class="btn danger" data-r="force">强制释放</button>' +
+    '</div>',
+    { wide: true }
+  );
+  $('.x', d.el).addEventListener('click', () => { d.close(); openResId = null; });
+  d.el.addEventListener('click', e => {
+    const seg = e.target.closest('#segLock button');
+    if (seg) {
+      const v = seg.dataset.v;
+      r.strategy = v;
+      r.mode = v === 'exclusive' ? '独占锁' : v === 'shared' ? '共享锁 (1/5)' : '独占锁 · 自动释放';
+      if (v === 'timeout' && r.state === 'busy' && r.ttlSec === null) r.ttlSec = 1800;
+      renderTable(); d.close(); openResId = null; openResDrawer(id);
+      toast('锁策略已切换为：' + seg.textContent + '（演示）', 'ok');
+      return;
+    }
+    const b = e.target.closest('[data-r]');
+    if (!b) return;
+    if (b.dataset.r === 'renew') renewLock(r);
+    else if (b.dataset.r === 'expire') expireLock(r);
+    else if (b.dataset.r === 'force') confirmForce(r);
+  });
+}
+
+/* ---- 锁动作 ---- */
+function addEvent(kind, res, who, text, src) {
+  const now = new Date();
+  const p = n => String(n).padStart(2, '0');
+  EVENTS.unshift({
+    ts: now.getFullYear() + '-' + p(now.getMonth() + 1) + '-' + p(now.getDate()) + ' ' + p(now.getHours()) + ':' + p(now.getMinutes()) + ':' + p(now.getSeconds()),
+    kind: kind, res: res, who: who, text: text, evt: null, src: src || '本次操作'
+  });
+}
+function releaseLock(r, kind, who, text) {
+  r.state = 'idle'; r.holder = '—'; r.holderType = ''; r.acquired = '—'; r.ttlSec = null; r.ttl = '—';
+  addEvent(kind, r.name, who, text);
+  renderTable(); renderEvents(); renderStats();
+}
+function renewLock(r) {
+  if (r.state !== 'busy') { toast('该资源当前未被占用，无需续期', 'warn'); return; }
+  r.ttlSec = (r.ttlSec === null ? 1800 : r.ttlSec) + 300;
+  r.ttl = fmtTtl(r.ttlSec);
+  addEvent('renew', r.name, r.holderType || '持有方', '锁续期成功，TTL 延长 5 分钟');
+  renderTable(); renderEvents();
+  if (openResId === r.id) { openResId = null; openResDrawer(r.id); }
+  toast('已为 ' + r.name + ' 续期 5 分钟', 'ok');
+}
+function expireLock(r) {
+  if (r.state !== 'busy') { toast('该资源当前未被占用', 'warn'); return; }
+  releaseLock(r, 'timeout', '资源管理器', '锁 TTL 到期自动释放（持有方心跳中断）');
+  toast('锁已自动释放：' + r.name, 'ok');
+  if (openResId === r.id) { openResId = null; openResDrawer(r.id); }
+}
+function confirmForce(r) {
+  const m = openModal(
+    '<div class="modal-head"><h3>强制释放锁</h3><span class="x" data-close>✕</span></div>' +
+    '<div class="modal-body"><div class="notice err"><span class="ico">!</span><div>确认强制释放 <b>' + esc(r.name) + '</b>？<br>当前持有者 <b>' + esc(r.holder) + '</b> 的执行将被中断，资源立即回到空闲状态，并写入一条释放事件。</div></div></div>' +
+    '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn danger" id="forceOk">确认释放</button></div>'
+  );
+  $('#forceOk', m.el).addEventListener('click', () => {
+    releaseLock(r, 'release', '管理员 · 雪 樱', '管理员强制释放锁，持有方执行已中断');
+    m.close();
+    toast('已强制释放：' + r.name, 'ok');
+    if (openResId === r.id) { openResId = null; openResDrawer(r.id); }
+  });
+}
+
+/* ---- TTL 倒计时 ---- */
+function tick() {
+  RES.forEach(r => {
+    if (r.state !== 'busy' || r.ttlSec === null) return;
+    r.ttlSec -= 1;
+    if (r.ttlSec <= 0) {
+      releaseLock(r, 'timeout', '资源管理器', '锁 TTL 到期自动释放（持有方心跳中断）');
+      toast('锁已自动释放：' + r.name, 'ok');
+      if (openResId === r.id) { openResId = null; openResDrawer(r.id); }
+      return;
+    }
+    const cls = r.ttlSec <= 300 ? 'err' : r.ttlSec <= 900 ? 'warn' : '';
+    $$('[data-ttl="' + r.id + '"]').forEach(el => { el.textContent = fmtTtl(r.ttlSec); el.className = 'ttl ' + cls; });
+  });
+}
+
+/* ---- 冲突处理策略 ---- */
+function renderPolicyState() {
+  const mode = $('#polMode').value === 'wait' ? '等待排队' : '按策略失败';
+  const br = $('#polBranch').selectedOptions[0] ? $('#polBranch').selectedOptions[0].textContent : '—';
+  const after = { continue: '继续执行（标记告警）', fail: '标记该分支失败', manual: '转人工处理' }[$('#polAfter').value];
+  $('#policyState').textContent = '当前生效：' + mode + ' · 超时 ' + $('#polTimeout').value + ' 分钟 · 降级分支 ' + br + ' · ' + after;
+}
+
+/* ---- 事件绑定 ---- */
+function bind() {
+  $('#resBody').addEventListener('click', e => {
+    const act = e.target.closest('[data-act]');
+    const row = e.target.closest('[data-res]');
+    if (!row) return;
+    const id = row.dataset.res;
+    const r = RES.find(x => x.id === id);
+    if (act) {
+      e.stopPropagation();
+      if (act.dataset.act === 'detail') openResDrawer(id);
+      else if (act.dataset.act === 'release') {
+        if (r.state !== 'busy') { toast('该资源当前空闲，无需释放', 'warn'); return; }
+        confirmForce(r);
+      }
+      return;
+    }
+    $$('tr.sel').forEach(tr => tr.classList.remove('sel'));
+    row.classList.add('sel');
+    openResDrawer(id);
+  });
+
+  $('#eventStream').addEventListener('click', e => {
+    const item = e.target.closest('.stream-item');
+    if (!item) return;
+    const m = item.querySelector('.m b');
+    if (!m) return;
+    const r = RES.find(x => x.name === m.textContent);
+    if (r) openResDrawer(r.id);
+  });
+
+  $('#btnRefresh').addEventListener('click', () => {
+    renderTable(); renderEvents(); renderStats();
+    toast('资源状态已刷新', 'ok');
+  });
+  $('#btnPolicy').addEventListener('click', () => {
+    $('#policyCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    toast('已定位到冲突处理策略配置', 'ok');
+  });
+  $('#btnSavePolicy').addEventListener('click', () => {
+    renderPolicyState();
+    toast('冲突处理策略已保存', 'ok');
+  });
+  ['polMode', 'polTimeout', 'polBranch', 'polAfter'].forEach(id => {
+    $('#' + id).addEventListener('change', renderPolicyState);
+  });
+}
+
+/* ---- 启动 ---- */
+document.addEventListener('DOMContentLoaded', () => {
+  renderShell('resources', {
+    title: '资源与锁',
+    sub: RES.length + ' 项资源',
+    actions: '<button class="btn" id="btnTopPolicy">冲突处理策略</button>'
+  });
+  $('#btnTopPolicy').addEventListener('click', () => { $('#policyCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+
+  /* 降级分支选项来自控制流节点目录 */
+  $('#polBranch').innerHTML = ['retry', 'approval', 'triage', 'join', 'condition']
+    .map(id => ALL_NODES[id])
+    .filter(Boolean)
+    .map(n => '<option value="' + esc(n.id) + '">' + esc(n.name) + '</option>').join('');
+
+  renderDecl();
+  renderStats();
+  renderTable();
+  renderEvents();
+  renderPolicyState();
+  bind();
+
+  setInterval(tick, 1000);
+
+  const qp = new URLSearchParams(location.search);
+  const target = qp.get('res');
+  if (target) {
+    const r = RES.find(x => x.id === target);
+    if (r) {
+      const tr = $('tr[data-res="' + target + '"]');
+      if (tr) { tr.classList.add('sel'); tr.scrollIntoView({ block: 'center' }); }
+      openResDrawer(target);
+      toast('已定位资源：' + r.name, 'ok');
+    } else {
+      toast('未找到资源：' + target, 'err');
+    }
+  }
+});
+</script>
+</body></html>

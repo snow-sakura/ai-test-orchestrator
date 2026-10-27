@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>编排画布 · 智测编排</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<link rel="stylesheet" href="assets/css/editor.css">
+</head>
+<body>
+
+<div class="ed-app">
+
+  <!-- ============ 左侧：工作流列表 + 节点模板库 ============ -->
+  <aside class="ed-left">
+    <div class="ed-left-top">
+      <div class="ed-wf-head">
+        <span>工作流</span>
+        <button class="btn ghost icon sm" id="btn-new-wf" title="新建工作流">+</button>
+      </div>
+      <div class="ed-wf-search">
+        <div class="search" style="width:100%">
+          <input class="input" id="wf-search" placeholder="搜索工作流…">
+        </div>
+      </div>
+      <div id="wf-list" style="max-height:196px;overflow-y:auto"></div>
+    </div>
+
+    <div class="ed-left-body">
+      <div class="ed-lib-head">节点模板库</div>
+      <div class="ed-lib-search">
+        <div class="search" style="width:100%">
+          <input class="input" id="lib-search" placeholder="搜索节点（双击添加到画布）…">
+        </div>
+      </div>
+      <div id="lib-body"></div>
+      <div style="padding:10px 14px 20px;color:var(--tx-4);font-size:10.5px;line-height:1.6">
+        拖拽节点到画布放置；双击节点模板可快速添加到视图中心。
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ 中间：画布 ============ -->
+  <section class="ed-canvas">
+
+    <header class="ed-topbar">
+      <button class="btn ghost icon" id="btn-exit" title="返回工作流列表">←</button>
+      <div class="title">
+        <span id="top-title">代码变更驱动的 CI/CD 质量门禁</span>
+        <span class="tag ok dot">已发布</span>
+      </div>
+
+      <div class="ed-save-state saved" id="save-state"><span class="dot"></span><span>已保存</span></div>
+
+      <div class="stat">
+        <span>节点 <b id="stat-nodes">0</b></span>
+        <span>连线 <b id="stat-edges">0</b></span>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="group">
+        <div class="zoom-ctl">
+          <button id="btn-zoom-out" title="缩小">−</button>
+          <span class="val" id="zoom-val" title="点击重置">100%</span>
+          <button id="btn-zoom-in" title="放大">+</button>
+        </div>
+        <button class="btn ghost icon" id="btn-fit" title="适配视图 (F)">⛶</button>
+      </div>
+
+      <div class="group">
+        <button class="btn ghost icon" id="btn-undo" title="撤销 (Ctrl+Z)">↶</button>
+        <button class="btn ghost icon" id="btn-redo" title="重做 (Ctrl+Y)">↷</button>
+      </div>
+
+      <div class="group">
+        <button class="btn sm" id="btn-hide-aux" title="隐藏辅助节点，仅展示主流程">隐藏辅助</button>
+        <button class="btn sm" id="btn-validate" title="结构校验">结构校验</button>
+        <button class="btn sm" id="btn-history" title="版本历史">历史</button>
+        <button class="btn sm" id="btn-save" title="保存 (Ctrl+S)">保存</button>
+        <button class="btn primary sm" id="btn-run" title="试运行 / 正式运行">▶ 执行</button>
+      </div>
+    </header>
+
+    <div class="canvas-viewport" id="viewport">
+      <div class="canvas-world" id="world">
+        <svg class="edge-layer" id="edge-layer"></svg>
+      </div>
+
+      <!-- 结构校验面板 -->
+      <div class="validate-panel" id="validate-panel">
+        <div class="validate-head" id="validate-title">结构校验</div>
+        <div class="validate-list" id="validate-list"></div>
+      </div>
+
+      <!-- 缩略图 -->
+      <div class="canvas-minimap">
+        <div class="mini-head">导航缩略图</div>
+        <svg id="mini-svg" viewBox="0 0 190 124"></svg>
+      </div>
+
+      <!-- 操作提示 -->
+      <div class="canvas-hud">
+        <span><kbd>拖拽</kbd> 移动节点</span>
+        <span><kbd>滚轮</kbd> 缩放</span>
+        <span><kbd>空格</kbd>+拖拽 平移</span>
+        <span><kbd>Del</kbd> 删除</span>
+        <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast-wrap"></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/editor.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  /* ---- 左侧工作流列表 ---- */
+  var list = document.getElementById('wf-list');
+  function renderWfList() {
+    list.innerHTML = WORKFLOWS.map(function (w) {
+      return '<div class="ed-wf-item ' + (w.id === 'wf_cicd' ? 'active' : '') + '" data-wf="' + w.id + '">' +
+        '<span class="st ' + w.status + '"></span>' +
+        '<span class="nm" title="' + esc(w.name) + '">' + esc(w.name) + '</span>' +
+        '<span class="ico" title="在画布中打开">✎</span></div>';
+    }).join('');
+    list.querySelectorAll('.ed-wf-item').forEach(function (el) {
+      el.addEventListener('click', function () {
+        if (el.dataset.wf === 'wf_cicd') { toast('已在当前画布', 'info'); return; }
+        location.href = 'editor.html?wf=' + el.dataset.wf;
+      });
+    });
+  }
+  renderWfList();
+
+  document.getElementById('wf-search').addEventListener('input', function (e) {
+    var q = e.target.value.trim().toLowerCase();
+    list.querySelectorAll('.ed-wf-item').forEach(function (el) {
+      el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+
+  document.getElementById('btn-new-wf').addEventListener('click', function () {
+    var m = openModal(
+      '<div class="modal-head"><h3>新建工作流</h3><span class="x" data-close>×</span></div>' +
+      '<div class="modal-body">' +
+      '  <div class="field"><label>工作流名称 <span class="req">*</span></label><input class="input" id="nw-name" placeholder="如：订单支付链路回归"></div>' +
+      '  <div class="field"><label>选择编排范式模板</label>' +
+      '    <div id="nw-tpl" style="display:flex;flex-direction:column;gap:7px"></div>' +
+      '  </div>' +
+      '</div>' +
+      '<div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="nw-ok">创建草稿</button></div>'
+    );
+    var TPL = [
+      { n: '代码变更驱动的 CI/CD 质量门禁', s: '变更分析 → 风险评级 → 用例生成 → 多类型并行执行 → 门禁裁决' },
+      { n: '智能探索与大规模异步回归', s: '策略生成 → 浏览器智能体探索 + 异步大规模回归并行' },
+      { n: '移动端多端回归', s: '设备 A/B/Web 并行执行，资源锁保证设备独占' },
+      { n: '外部智能体触发按需测试', s: '鉴权 → 审批队列 → 触发工作流 → 结果回调' },
+      { n: '需求到用例的测试设计流水线', s: '需求解析 → 用例生成 → 数据合成 → 充分性评估 → 资产认证' }
+    ];
+    var sel = 0;
+    m.el.querySelector('#nw-tpl').innerHTML = TPL.map(function (t, i) {
+      return '<label class="var-row" style="cursor:pointer;margin:0" data-i="' + i + '">' +
+        '<input type="radio" name="tpl" ' + (i === 0 ? 'checked' : '') + '>' +
+        '<span style="flex:1"><span style="display:block;font-size:12px;color:var(--tx-1)">' + esc(t.n) + '</span>' +
+        '<span style="display:block;font-size:10.5px;color:var(--tx-3);margin-top:2px">' + esc(t.s) + '</span></span></label>';
+    }).join('');
+    m.el.querySelectorAll('#nw-tpl label').forEach(function (lab) {
+      lab.addEventListener('click', function () { sel = +lab.dataset.i; });
+    });
+    m.el.querySelector('#nw-ok').addEventListener('click', function () {
+      var name = m.el.querySelector('#nw-name').value.trim();
+      if (!name) { toast('请填写工作流名称', 'warn'); return; }
+      m.close();
+      toast('已创建草稿「' + name + '」，基于范式：' + TPL[sel].n, 'ok');
+      setTimeout(function () { location.href = 'workflows.html'; }, 900);
+    });
+  });
+});
+</script>
+</body>
+</html>
