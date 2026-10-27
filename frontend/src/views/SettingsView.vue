@@ -146,7 +146,7 @@ async function refresh() {
 
 async function updateItem(section, item, value) {
   try {
-    await axios.put(`/api/settings/sections/${encodeURIComponent(section)}/items/${encodeURIComponent(item.key)}`, { value })
+    await axios.put(`/api/settings/sections/${encodeURIComponent(section)}/items/${encodeURIComponent(item.key)}`, { key: item.key, value })
     item.value = value
     item.updatedAt = '刚刚'
     showToast('配置已保存')

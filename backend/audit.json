@@ -84,15 +84,15 @@
     "hash": "46d2e07cdc743bff76a0c52fbea058f6fb1db84bb3f0dfa90eb750999abaf0f2"
   },
   {
-    "id": "ev_a1128b",
-    "ts": "2026-10-27 12:00",
+    "id": "ev_c45534",
+    "ts": "2026-10-27 13:11",
     "type": "工具调用",
-    "workflow": "V8 测试工作流",
-    "node": "测试节点",
-    "actor": "测试负责人",
-    "detail": "V8 自动验证追加的证据条目",
-    "refId": "manual:v8_test",
+    "workflow": "手动追加",
+    "node": "—",
+    "actor": "平台",
+    "detail": "V13 追加证据验证",
+    "refId": "trace:v13",
     "prevHash": "46d2e07cdc743bff76a0c52fbea058f6fb1db84bb3f0dfa90eb750999abaf0f2",
-    "hash": "99afc9a96cc03aa7296edc68f75afe2f8efaa34aeb8b4e40639151c6d275b8de"
+    "hash": "63fcb2f28b476bc80803b69a2bb67fbef74701277269d46dc27c1e1faa1ce0bc"
   }
 ]

@@ -15,7 +15,7 @@
           "category": "platform",
           "label": "开始",
           "desc": "工作流入口",
-          "status": "success"
+          "status": "pending"
         },
         "config": {
           "toolWhitelist": [],
@@ -37,7 +37,7 @@
           "category": "analysis",
           "label": "需求解析",
           "desc": "解析需求文档，抽取可测需求点与验收条件",
-          "status": "success"
+          "status": "pending"
         },
         "config": {
           "toolWhitelist": [],
@@ -45,16 +45,17 @@
           "rules": [],
           "inputBindings": [],
           "outputSchemaText": "{}",
-          "type": "测试分析"
+          "model": "Qwen3-Max",
+          "systemPrompt": "V13 提示词验证"
         }
       },
       {
-        "id": "n_mvq5pgui_yp3c",
+        "id": "n_mvq89dbz_fbmv",
         "label": "需求解析",
         "type": "custom",
         "position": {
-          "x": 232.8822934379798,
-          "y": 144.82527082144952
+          "x": 286.50434252104594,
+          "y": 222.10883937656618
         },
         "data": {
           "category": "analysis",
@@ -63,17 +64,15 @@
           "status": "pending"
         },
         "config": {
-          "toolWhitelist": [
-            "webFetch"
-          ],
+          "toolWhitelist": [],
           "skills": [],
           "rules": [],
           "inputBindings": [],
           "outputSchemaText": "{}",
-          "model": "Gemini-2.5-Pro",
+          "model": "Claude-Opus-4.5",
           "temperature": 0.2,
           "topP": 0.9,
-          "systemPrompt": "你是测试分析智能体，请解析需求并输出结构化需求点",
+          "systemPrompt": "",
           "userPrompt": "",
           "outputSchema": {},
           "maxSteps": 10,

@@ -3,87 +3,38 @@
     {
       "id": "cap_wf_cicd",
       "kind": "工作流",
-      "name": "代码变更驱动的 CI/CD 质量门禁",
+      "name": "CI/CD 质量门禁工作流",
       "source": "wf_cicd",
       "exposed": true,
       "status": "active",
-      "protocol": "OpenAPI / 标准化工具协议",
-      "auth": "API Key + 角色授权",
-      "dangerousOps": [
-        "运行测试",
-        "写入缺陷"
-      ],
-      "callCount30d": 128,
-      "lastCalled": "2026-10-26 15:20",
-      "desc": "发布时显式声明对外暴露的工作流，供外部智能体系统调度"
-    },
-    {
-      "id": "cap_node_case_gen",
-      "kind": "节点",
-      "name": "代码变更驱动测试生成节点",
-      "source": "wf_cicd:n_case_gen",
-      "exposed": true,
-      "status": "active",
-      "protocol": "MCP Tool",
-      "auth": "API Key",
-      "dangerousOps": [
-        "生成并写入用例"
-      ],
-      "callCount30d": 56,
-      "lastCalled": "2026-10-26 14:10",
-      "desc": "单节点封装为可调用工具，支持外部系统按参数触发用例生成"
-    },
-    {
-      "id": "cap_tool_browser",
-      "kind": "工具",
-      "name": "Browser-use 浏览器智能体",
-      "source": "capability_pack:browser-use",
-      "exposed": true,
-      "status": "active",
-      "protocol": "HTTP 回调",
-      "auth": "OAuth2 客户端授权",
-      "dangerousOps": [
-        "修改资产"
-      ],
-      "callCount30d": 342,
-      "lastCalled": "2026-10-26 16:02",
-      "desc": "认证能力包暴露为对外工具，执行类操作默认进入待审批队列"
-    },
-    {
-      "id": "cap_rule_gate",
-      "kind": "规则",
-      "name": "质量门禁确定性裁决规则",
-      "source": "rule:quality_gate",
-      "exposed": false,
-      "status": "disabled",
-      "protocol": "—",
-      "auth": "内部",
+      "protocol": "OpenAPI",
+      "auth": "OAuth2",
       "dangerousOps": [],
-      "callCount30d": 0,
-      "lastCalled": "",
-      "desc": "内部规则，默认不对外暴露"
+      "callCount30d": 128,
+      "lastCalled": "2026-10-26",
+      "desc": "对外暴露的 CI/CD 门禁工作流"
     },
     {
-      "id": "cap_wf_explore",
-      "kind": "工作流",
-      "name": "智能探索与大规模异步回归",
-      "source": "wf_explore",
+      "id": "cap_tool_fetch",
+      "kind": "工具",
+      "name": "webFetch 工具",
+      "source": "tool:webFetch",
       "exposed": true,
-      "status": "pending_approval",
-      "protocol": "OpenAPI / 标准化工具协议",
-      "auth": "API Key + 角色授权",
+      "status": "active",
+      "protocol": "REST",
+      "auth": "APIKey",
       "dangerousOps": [
-        "运行测试"
+        "删除记录"
       ],
-      "callCount30d": 0,
-      "lastCalled": "",
-      "desc": "新发布工作流，包含执行类操作，等待平台侧审批后放行"
+      "callCount30d": 540,
+      "lastCalled": "2026-10-26",
+      "desc": "对外暴露的网页抓取工具"
     },
     {
-      "id": "cap_bfc418",
+      "id": "cap_6dbee6",
       "kind": "工作流",
-      "name": "V9 测试外部能力",
-      "source": "wf_v9_test",
+      "name": "V13验证能力",
+      "source": "V13验证能力",
       "exposed": true,
       "status": "active",
       "protocol": "OpenAPI / 标准化工具协议",
@@ -96,92 +47,47 @@
   ],
   "callLogs": [
     {
-      "id": "call_001",
-      "ts": "2026-10-26 15:20",
-      "capability": "代码变更驱动的 CI/CD 质量门禁",
-      "caller": "external-agent-7",
+      "id": "cl1",
+      "ts": "2026-10-26 15:02",
+      "capability": "webFetch 工具",
+      "caller": "external-agent-01",
       "result": "success",
-      "duration": "6m18s",
-      "auditRef": "trace:run_seed_002"
+      "duration": "320ms",
+      "auditRef": "audit:cl1"
     },
     {
-      "id": "call_002",
-      "ts": "2026-10-26 14:10",
-      "capability": "代码变更驱动测试生成节点",
-      "caller": "ci-pipeline-3",
-      "result": "success",
-      "duration": "42s",
-      "auditRef": "trace:gen_088"
-    },
-    {
-      "id": "call_003",
-      "ts": "2026-10-26 16:02",
-      "capability": "Browser-use 浏览器智能体",
-      "caller": "external-agent-7",
+      "id": "cl2",
+      "ts": "2026-10-26 15:10",
+      "capability": "CI/CD 质量门禁工作流",
+      "caller": "ci-runner",
       "result": "pending_approval",
       "duration": "—",
-      "auditRef": "approval:cap_tool_browser"
-    },
-    {
-      "id": "call_004",
-      "ts": "2026-10-25 11:40",
-      "capability": "代码变更驱动的 CI/CD 质量门禁",
-      "caller": "ci-pipeline-1",
-      "result": "failed",
-      "duration": "2m01s",
-      "auditRef": "trace:run_seed_004"
+      "auditRef": "audit:cl2"
     }
   ],
   "approvals": [
     {
-      "id": "ap_001",
-      "ts": "2026-10-26 16:02",
-      "capability": "Browser-use 浏览器智能体",
-      "op": "修改资产",
+      "id": "appr_001",
+      "ts": "2026-10-26 15:12",
+      "capability": "webFetch 工具",
+      "op": "删除记录",
       "status": "已放行",
       "by": "测试负责人",
-      "approvedAt": "2026-10-27 12:00"
-    },
-    {
-      "id": "ap_002",
-      "ts": "2026-10-26 15:20",
-      "capability": "代码变更驱动的 CI/CD 质量门禁",
-      "op": "运行测试",
-      "status": "已放行",
-      "by": "规则引擎（低风险自动放行）"
-    },
-    {
-      "id": "ap_003",
-      "ts": "2026-10-25 21:36",
-      "capability": "智能探索与大规模异步回归",
-      "op": "写入缺陷",
-      "status": "已放行",
-      "by": "测试负责人"
+      "approvedAt": "2026-10-27 13:11"
     }
   ],
   "connects": [
     {
       "id": "conn_001",
-      "caller": "external-agent-7",
-      "keyMasked": "sk-ext-••••••••a1b2",
+      "caller": "external-agent-01",
       "role": "外部智能体",
-      "scopes": [
-        "运行测试",
-        "查询结果"
-      ],
       "status": "active",
-      "created": "2026-09-01"
-    },
-    {
-      "id": "conn_002",
-      "caller": "ci-pipeline-1",
-      "keyMasked": "sk-ci-••••••••c3d4",
-      "role": "CI 流水线",
+      "keyMasked": "sk-ext-••••a1b2",
+      "created": "2026-10-01",
       "scopes": [
-        "运行测试"
-      ],
-      "status": "active",
-      "created": "2026-08-15"
+        "workflow.read",
+        "tool.invoke"
+      ]
     }
   ]
 }

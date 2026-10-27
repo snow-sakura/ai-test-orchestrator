@@ -1382,8 +1382,8 @@ def save_audit(items: List[Dict[str, Any]]):
 
 
 def _audit_entry_hash(item: Dict[str, Any]) -> str:
-    """计算账本条目的 SHA-256 哈希（不含 prevHash，用于验证内容未被篡改）"""
-    payload = {k: v for k, v in item.items() if k != "prevHash"}
+    """计算账本条目的 SHA-256 哈希（不含 prevHash 和 hash 本身，用于验证内容未被篡改）"""
+    payload = {k: v for k, v in item.items() if k not in ("prevHash", "hash")}
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
 
@@ -2078,7 +2078,9 @@ async def list_settings_sections():
 async def update_setting_item(section_key: str, item_key: str, payload: SectionItemUpdate):
     store = load_settings()
     sections = store.get("sections", {})
-    sec = next((s for s in sections.values() if s.get("label") == section_key or s.get("id") == section_key), None)
+    # GET /settings 在返回值上附加 key（dict 键，如 "驱动"）；PUT 请求携带的就是该 key，
+    # 因此查找需同时兼容 dict 键 / label / id 三种形式
+    sec = next((s for k, s in sections.items() if k == section_key or s.get("label") == section_key or s.get("id") == section_key), None)
     if sec is None:
         raise HTTPException(status_code=404, detail="Section not found")
     item = next((i for i in sec.get("items", []) if i.get("key") == item_key), None)

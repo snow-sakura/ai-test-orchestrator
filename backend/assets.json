@@ -6,9 +6,7 @@
     "version": 3,
     "status": "certified",
     "scope": [
-      "移动端",
-      "iOS",
-      "Android"
+      "移动端"
     ],
     "quality": {
       "mutationScore": 0.92,
@@ -16,10 +14,8 @@
       "regressionResult": "pass"
     },
     "references": [
-      "wf_cicd",
-      "wf_mobile"
+      "wf_cicd"
     ],
-    "pinnedVersions": {},
     "certifiedAt": "2026-09-15",
     "retireAlert": false,
     "auditLog": [
@@ -27,96 +23,7 @@
         "ts": "2026-09-15",
         "action": "certified",
         "by": "质量门禁节点",
-        "detail": "通过全部质量门槛"
-      }
-    ]
-  },
-  "asset_script_001": {
-    "id": "asset_script_001",
-    "type": "脚本",
-    "name": "API 接口巡检自动化脚本",
-    "version": 1,
-    "status": "certified",
-    "scope": [
-      "API",
-      "巡检"
-    ],
-    "quality": {
-      "mutationScore": 0.88,
-      "stability": 0.97,
-      "regressionResult": "pass"
-    },
-    "references": [
-      "wf_api_daily"
-    ],
-    "pinnedVersions": {},
-    "certifiedAt": "2026-10-01",
-    "retireAlert": false,
-    "auditLog": [
-      {
-        "ts": "2026-10-01",
-        "action": "certified",
-        "by": "测试资产认证节点",
-        "detail": "通过质量门槛"
-      }
-    ]
-  },
-  "asset_data_001": {
-    "id": "asset_data_001",
-    "type": "数据模板",
-    "name": "用户角色权限测试数据模板",
-    "version": 2,
-    "status": "certified",
-    "scope": [
-      "权限",
-      "RBAC"
-    ],
-    "quality": {
-      "mutationScore": 0.9,
-      "stability": 0.93,
-      "regressionResult": "pass"
-    },
-    "references": [],
-    "pinnedVersions": {},
-    "certifiedAt": "2026-08-20",
-    "retireAlert": false,
-    "auditLog": [
-      {
-        "ts": "2026-08-20",
-        "action": "certified",
-        "by": "测试资产认证节点",
-        "detail": "通过质量门槛"
-      }
-    ]
-  },
-  "asset_skill_001": {
-    "id": "asset_skill_001",
-    "type": "能力包",
-    "name": "Browser-use 浏览器智能体能力包",
-    "version": 5,
-    "status": "certified",
-    "scope": [
-      "Web",
-      "UI",
-      "探索"
-    ],
-    "quality": {
-      "mutationScore": 0.85,
-      "stability": 0.91,
-      "regressionResult": "pass"
-    },
-    "references": [
-      "wf_explore"
-    ],
-    "pinnedVersions": {},
-    "certifiedAt": "2026-10-10",
-    "retireAlert": false,
-    "auditLog": [
-      {
-        "ts": "2026-10-10",
-        "action": "certified",
-        "by": "测试资产认证节点",
-        "detail": "通过质量门槛"
+        "detail": "通过"
       }
     ]
   },
@@ -127,27 +34,25 @@
     "version": 1,
     "status": "rejected",
     "scope": [
-      "支付",
-      "回归"
+      "支付"
     ],
     "quality": {
       "mutationScore": 0.72,
       "stability": 0.6,
-      "regressionResult": "pending"
+      "regressionResult": "pass"
     },
     "references": [],
-    "pinnedVersions": {},
     "certifiedAt": "",
     "retireAlert": false,
     "auditLog": [
       {
         "ts": "2026-10-25",
         "action": "created",
-        "by": "代码变更驱动测试生成节点",
+        "by": "生成节点",
         "detail": "生成待认证"
       },
       {
-        "ts": "2026-10-27 11:59",
+        "ts": "2026-10-27 13:11",
         "action": "rejected",
         "by": "测试资产认证节点",
         "detail": "未通过质量门槛（变异分数/稳定性/副作用回归）"
@@ -171,54 +76,18 @@
       {
         "key": "regressionResult",
         "label": "副作用回归结果",
-        "value": "pending",
-        "passed": false,
+        "value": "pass",
+        "passed": true,
         "threshold": "必须通过"
       }
     ],
     "qualityGate": "未通过"
   },
-  "asset_case_002": {
-    "id": "asset_case_002",
+  "asset_用例_ac4f6253": {
+    "id": "asset_用例_ac4f6253",
     "type": "用例",
-    "name": "旧版订单流程用例（已失效）",
-    "version": 4,
-    "status": "retired",
-    "scope": [
-      "订单",
-      "旧版"
-    ],
-    "quality": {
-      "mutationScore": 0.55,
-      "stability": 0.4,
-      "regressionResult": "fail"
-    },
-    "references": [
-      "wf_order_old"
-    ],
-    "pinnedVersions": {},
-    "certifiedAt": "2026-05-01",
-    "retireAlert": true,
-    "auditLog": [
-      {
-        "ts": "2026-05-01",
-        "action": "certified",
-        "by": "测试资产认证节点",
-        "detail": "通过质量门槛"
-      },
-      {
-        "ts": "2026-10-20",
-        "action": "retired",
-        "by": "平台",
-        "detail": "被测系统订单模块重大变更，资产可能失效"
-      }
-    ]
-  },
-  "asset_用例_ab38b681": {
-    "id": "asset_用例_ab38b681",
-    "type": "用例",
-    "name": "V5 自动测试资产",
-    "version": 1,
+    "name": "V13验证资产",
+    "version": 2,
     "status": "pending",
     "scope": [
       "新建"
@@ -234,7 +103,7 @@
     "retireAlert": false,
     "auditLog": [
       {
-        "ts": "2026-10-27 11:59",
+        "ts": "2026-10-27 13:11",
         "action": "created",
         "by": "认证资产库",
         "detail": "新建资产待认证"
