@@ -1,99 +1,75 @@
 {
   "pools": [
     {
-      "id": "pool_device",
+      "id": "pool_ego_browser",
       "type": "设备",
-      "name": "移动设备池",
-      "total": 2,
+      "name": "Ego 浏览器池",
+      "total": 4,
       "locked": 1,
-      "free": 1,
+      "free": 3,
       "members": [
         {
-          "id": "dev_a",
-          "label": "设备 A（iPhone 15 Pro）",
+          "id": "browser_e1",
+          "label": "Chromium Ego-01",
           "status": "free",
           "holder": "",
           "ttl": 0
         },
         {
-          "id": "dev_b",
-          "label": "设备 B（Pixel 8）",
+          "id": "browser_e2",
+          "label": "Chromium Ego-02",
+          "status": "free",
+          "holder": "",
+          "ttl": 0
+        },
+        {
+          "id": "browser_e3",
+          "label": "Chromium Ego-03",
           "status": "locked",
-          "holder": "移动端回归 · n_exec_b",
-          "ttl": 120
+          "holder": "Ego 回归 · e5",
+          "ttl": 300
+        },
+        {
+          "id": "browser_e4",
+          "label": "Chromium Ego-04",
+          "status": "free",
+          "holder": "",
+          "ttl": 0
         }
       ]
-    },
-    {
-      "id": "pool_c2b5aa",
-      "type": "数据源",
-      "name": "V13数据源池",
-      "total": 0,
-      "locked": 0,
-      "free": 0,
-      "members": []
     }
   ],
   "locks": [
     {
-      "id": "lock_dev_b",
-      "resourceId": "dev_b",
-      "poolId": "pool_device",
+      "id": "lock_ego_e3",
+      "resourceId": "browser_e3",
+      "poolId": "pool_ego_browser",
       "mode": "独占锁",
-      "holder": "移动端回归 · n_exec_b",
-      "acquiredAt": "2026-10-26 15:32",
-      "ttl": 120,
-      "autoRelease": true,
-      "status": "free",
-      "releasedAt": "2026-10-27 13:14:38",
-      "releasedBy": "平台管理员"
-    },
-    {
-      "id": "lock_e898ce",
-      "resourceId": "dev_a",
-      "poolId": "",
-      "mode": "独占锁",
-      "holder": "V13验证 · n_lock",
-      "acquiredAt": "2026-10-27 13:14:38",
-      "ttl": 600,
+      "holder": "Ego 回归 · e5",
+      "acquiredAt": "2026-10-27 15:10",
+      "ttl": 300,
       "autoRelease": true,
       "status": "locked"
     }
   ],
   "events": [
     {
-      "id": "ev1",
-      "ts": "2026-10-26 15:32",
-      "resourceId": "dev_b",
+      "id": "ev_lock_ego",
+      "ts": "2026-10-27 15:10",
+      "resourceId": "browser_e3",
       "action": "持有",
-      "actor": "移动端回归 · n_exec_b",
-      "detail": "获取独占锁"
-    },
-    {
-      "id": "evt_bfb603",
-      "ts": "2026-10-27 13:14:38",
-      "resourceId": "dev_a",
-      "action": "获取",
-      "actor": "V13验证 · n_lock",
-      "detail": "获取 独占锁（TTL 600s）"
-    },
-    {
-      "id": "evt_ddb1f7",
-      "ts": "2026-10-27 13:14:38",
-      "resourceId": "dev_b",
-      "action": "释放",
-      "actor": "平台管理员",
-      "detail": "主动释放锁"
+      "actor": "Ego 回归 · e5",
+      "detail": "获取独占锁（TTL 300s）"
     }
   ],
   "queue": [
     {
-      "id": "q1",
-      "resourceId": "dev_b",
+      "id": "q_ego_001",
+      "resourceId": "browser_e3",
       "policy": "排队等待",
-      "requester": "兼容性冒烟 · n_compat",
-      "ts": "2026-10-26 15:33",
-      "waitSec": 45
+      "requester": "Ego 冒烟 · e2",
+      "ts": "2026-10-27 15:11",
+      "waitSec": 30
     }
   ]
 }

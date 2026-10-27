@@ -7,15 +7,14 @@
       "items": [
         {
           "key": "浏览器驱动",
-          "value": "Selenium Chrome",
+          "value": "Playwright Chromium",
           "type": "select",
           "options": [
             "Playwright Chromium",
             "Selenium Chrome",
             "Airtest"
           ],
-          "desc": "UI 探索驱动",
-          "updatedAt": "2026-10-27 13:14"
+          "desc": "UI 探索驱动"
         }
       ]
     },
@@ -26,10 +25,10 @@
       "items": [
         {
           "key": "默认文本模型",
-          "value": "Claude-Sonnet-4.5",
+          "value": "Agnes 3.0 Flash",
           "type": "select",
           "options": [
-            "Claude-Sonnet-4.5",
+            "Agnes 3.0 Flash",
             "Qwen3-Max",
             "GPT-4o",
             "Gemini-2.5-Pro"
@@ -42,6 +41,13 @@
           "type": "number",
           "options": [],
           "desc": "低温度保证可重复"
+        },
+        {
+          "key": "最大输出 Token",
+          "value": "128000",
+          "type": "number",
+          "options": [],
+          "desc": "128K 上下文"
         }
       ]
     }
@@ -52,9 +58,16 @@
       "scope": "节点级",
       "tokenBudget": 50000,
       "timeBudgetSec": 600,
+      "onExceed": "硬停止",
+      "desc": "单节点预算"
+    },
+    {
+      "id": "budget_ego",
+      "scope": "Ego 工作流",
+      "tokenBudget": 200000,
+      "timeBudgetSec": 300,
       "onExceed": "降级输出",
-      "desc": "单节点预算",
-      "updatedAt": "2026-10-27 13:14"
+      "desc": "Ego 全链路预算"
     }
   ]
 }

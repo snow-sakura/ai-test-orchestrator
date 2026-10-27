@@ -1,11 +1,13 @@
 <template>
-  <div class="p-6 space-y-4">
-    <!-- 顶部 -->
-    <div>
-      <h2 class="text-lg font-bold text-polaroid-warm-800">统一配置中心</h2>
-      <p class="text-xs text-polaroid-warm-600 mt-0.5">
-        驱动 / 模型 / 通知 / 环境检测 / 权限控制 · 预算与熔断（PRD §6.8 / §6.9）
-      </p>
+  <div class="space-y-4">
+    <!-- 页头（竞品对齐：page-header / page-title） -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">统一配置中心</h1>
+        <p class="text-xs text-polaroid-warm-500 mt-0.5">
+          驱动 / 模型 / 通知 / 环境检测 / 权限控制 · 预算与熔断（PRD §6.8 / §6.9）
+        </p>
+      </div>
     </div>
 
     <!-- 左侧分区导航 -->

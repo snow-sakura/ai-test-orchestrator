@@ -20,3 +20,63 @@ body {
   border: 1px solid #fbeee0;
   border-radius: 2px;
 }
+
+/* ===== 竞品对齐：公共层次类（polaroid-warm 色板，沿用暖色系）===== */
+
+/* 页面容器：对应竞品 .page-container，主区 padding 20px */
+.page-container {
+  padding: 1.25rem;
+}
+
+/* 页头：对应竞品 .page-header，flex 两端对齐 */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+/* 页标题：对应竞品 .page-title 24px / 600 */
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #733d31;
+  line-height: 1.3;
+}
+
+/* 卡片容器：对应竞品 .card-container 白色圆角阴影 */
+.card-container {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* 筛选栏：对应竞品 .filter-bar，inline 搜索/下拉/按钮 */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+/* 状态标签：对应竞品 .status-tag */
+.status-tag {
+  display: inline-block;
+  font-size: 0.625rem;
+  line-height: 1.4;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+/* 优先级标签：对应竞品 .priority-tag */
+.priority-tag {
+  display: inline-block;
+  font-size: 0.625rem;
+  line-height: 1.4;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}

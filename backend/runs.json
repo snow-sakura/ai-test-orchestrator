@@ -87,214 +87,231 @@
     ],
     "created": "2026-10-26 16:42:00"
   },
-  "49108d1f-d7c5-4186-981c-e3b45f8a0656": {
-    "id": "49108d1f-d7c5-4186-981c-e3b45f8a0656",
-    "workflow_id": "default-workflow",
-    "workflow_name": "我的第一个测试工作流",
+  "run_ego_001": {
+    "id": "run_ego_001",
+    "workflow_id": "wf_ego_mini",
+    "workflow_name": "Ego 微商小程序全链路",
     "trigger": "手动",
     "status": "completed",
-    "started": "13:14:21",
-    "duration": "2.0s",
-    "tokens": 1602,
-    "cost": 0.008,
-    "gate": null,
+    "started": "10-27 15:08:00",
+    "duration": "9s42ms",
+    "tokens": 12400,
+    "cost": 0.056,
+    "gate": {
+      "verdict": "通过",
+      "engine": "确定性规则引擎",
+      "narrative": "主页/分类/加购/购物车/下单/订单 6 节点全部通过；金额两位小数、订单号 CA+14 位、付款三色校验通过"
+    },
     "node_states": {
-      "n1": "success",
-      "n2": "success",
-      "n_mvq8dpr1_56zh": "pending"
+      "e1": "success",
+      "e2": "success",
+      "e3": "success",
+      "e4": "success",
+      "e5": "success",
+      "e6": "success",
+      "e7": "success"
     },
     "timeline": [
       {
         "seq": 1,
-        "nodeId": "n1",
+        "nodeId": "e1",
         "label": "开始",
         "status": "success",
-        "started": "13:14:22",
-        "duration": "1.0s",
-        "tokens": 800,
-        "cost": 0.004,
-        "model": "Claude-Opus-4.5",
-        "input": {
-          "binding": "trigger.payload",
-          "payload": {
-            "workflow": "default-workflow"
-          }
-        },
-        "reasoning": "开始 节点按配置完成模拟推理，输出结构化结果。",
+        "started": "15:08:00",
+        "duration": "0.3s",
+        "tokens": 100,
+        "cost": 0.0005,
+        "model": "Agnes 3.0 Flash",
+        "reasoning": "入口节点。",
         "tools": [],
         "output": {
-          "status": "success",
-          "tokens": 800,
-          "cost": 0.004
+          "app": "ego-wechat-mini"
         },
         "evidence": [
-          "trace:n1:1",
-          "log:n1:1"
-        ],
-        "gate": null
+          "trace:run_ego_001:e1"
+        ]
       },
       {
         "seq": 2,
-        "nodeId": "n2",
-        "label": "需求解析",
+        "nodeId": "e2",
+        "label": "主页渲染",
         "status": "success",
-        "started": "13:14:23",
-        "duration": "1.0s",
-        "tokens": 802,
-        "cost": 0.004,
-        "model": "Qwen3-Max",
-        "input": {
-          "binding": "$.n2.input",
-          "payload": {
-            "workflow": "default-workflow"
-          }
-        },
-        "reasoning": "需求解析 节点按配置完成模拟推理，输出结构化结果。",
-        "tools": [],
+        "started": "15:08:00",
+        "duration": "1.2s",
+        "tokens": 1800,
+        "cost": 0.009,
+        "model": "Agnes 3.0 Flash",
+        "reasoning": "轮播 5s 切换、单张不轮播、黑灰圆点、新品倒序渲染。",
+        "tools": [
+          "screenshot",
+          "webFetch"
+        ],
         "output": {
-          "status": "success",
-          "tokens": 802,
-          "cost": 0.004
+          "bannerCount": 4,
+          "newProductsSortedDesc": true
         },
         "evidence": [
-          "trace:n2:2",
-          "log:n2:2"
+          "shot:ego-home",
+          "trace:run_ego_001:e2"
+        ]
+      },
+      {
+        "seq": 3,
+        "nodeId": "e3",
+        "label": "分类浏览",
+        "status": "success",
+        "started": "15:08:01",
+        "duration": "1.4s",
+        "tokens": 2100,
+        "cost": 0.0105,
+        "model": "Agnes 3.0 Flash",
+        "reasoning": "左侧分类正序、默认选中第一项、右侧三列商品。",
+        "tools": [
+          "screenshot"
         ],
-        "gate": null
+        "output": {
+          "categoryOrderAsc": true,
+          "defaultFirstSelected": true
+        },
+        "evidence": [
+          "shot:ego-category",
+          "trace:run_ego_001:e3"
+        ]
+      },
+      {
+        "seq": 4,
+        "nodeId": "e4",
+        "label": "加购",
+        "status": "success",
+        "started": "15:08:02",
+        "duration": "1.6s",
+        "tokens": 2400,
+        "cost": 0.012,
+        "model": "Agnes 3.0 Flash",
+        "reasoning": "数量 1~10、+/-步长 1、为 1 时 - 置灰、缺货置灰。",
+        "tools": [],
+        "output": {
+          "qtyRange": "1-10",
+          "minusDisabledAtOne": true
+        },
+        "evidence": [
+          "shot:ego-addcart",
+          "trace:run_ego_001:e4"
+        ]
+      },
+      {
+        "seq": 5,
+        "nodeId": "e5",
+        "label": "购物车结算",
+        "status": "success",
+        "started": "15:08:04",
+        "duration": "2.0s",
+        "tokens": 2800,
+        "cost": 0.014,
+        "model": "Agnes 3.0 Flash",
+        "reasoning": "全选联动、未选中下单置灰 ¥0、金额两位。",
+        "tools": [],
+        "output": {
+          "selectAllLinked": true,
+          "orderDisabledWhenNone": true,
+          "amountTwoDecimals": true
+        },
+        "evidence": [
+          "shot:ego-cart",
+          "trace:run_ego_001:e5"
+        ]
+      },
+      {
+        "seq": 6,
+        "nodeId": "e6",
+        "label": "下单支付",
+        "status": "success",
+        "started": "15:08:06",
+        "duration": "1.8s",
+        "tokens": 2000,
+        "cost": 0.01,
+        "model": "Agnes 3.0 Flash",
+        "reasoning": "库存判定、订单号 CA+14 位、付款三色。",
+        "tools": [],
+        "output": {
+          "stockCheckPassed": true,
+          "orderIdLen": 16,
+          "payColorMap": {
+            "待付款": "red",
+            "已付款": "amber",
+            "已发货": "green"
+          }
+        },
+        "evidence": [
+          "shot:ego-pay",
+          "trace:run_ego_001:e6"
+        ]
+      },
+      {
+        "seq": 7,
+        "nodeId": "e7",
+        "label": "订单详情",
+        "status": "success",
+        "started": "15:08:08",
+        "duration": "1.5s",
+        "tokens": 1200,
+        "cost": 0.006,
+        "model": "Agnes 3.0 Flash",
+        "reasoning": "预订单无订单号、支付成败差异、地址字数上限。",
+        "tools": [],
+        "output": {
+          "preOrderNoId": true,
+          "paySuccessDiff": true,
+          "addrCharLimit": 50
+        },
+        "evidence": [
+          "shot:ego-order",
+          "trace:run_ego_001:e7"
+        ]
       }
     ],
     "logs": [
       {
-        "nodeId": "n1",
-        "msg": "节点「开始」开始执行（模型 Claude-Opus-4.5）",
-        "time": "now"
+        "nodeId": "e1",
+        "msg": "节点「开始」开始执行（模型 Agnes 3.0 Flash）",
+        "time": "15:08:00"
       },
       {
-        "nodeId": "n1",
-        "msg": "节点「开始」执行成功 · Token 800 · 成本 ¥0.0040",
-        "time": "now"
+        "nodeId": "e2",
+        "msg": "节点「主页渲染」执行成功 · 轮播 5s / 单张不轮播通过",
+        "time": "15:08:01"
       },
       {
-        "nodeId": "n2",
-        "msg": "节点「需求解析」开始执行（模型 Qwen3-Max）",
-        "time": "now"
+        "nodeId": "e3",
+        "msg": "节点「分类浏览」执行成功 · 左侧正序默认选中通过",
+        "time": "15:08:03"
       },
       {
-        "nodeId": "n2",
-        "msg": "节点「需求解析」执行成功 · Token 802 · 成本 ¥0.0040",
-        "time": "now"
+        "nodeId": "e4",
+        "msg": "节点「加购」执行成功 · 数量 1~10 / 为1置灰通过",
+        "time": "15:08:05"
       },
       {
-        "nodeId": "global",
-        "msg": "工作流执行完毕 · 总 Token 1602 · 总成本 ¥0.0080",
-        "time": "now"
-      }
-    ],
-    "created": "13:14:23"
-  },
-  "e84bce3c-6e85-4836-8fbe-53d5168f0f20": {
-    "id": "e84bce3c-6e85-4836-8fbe-53d5168f0f20",
-    "workflow_id": "default-workflow",
-    "workflow_name": "我的第一个测试工作流",
-    "trigger": "手动",
-    "status": "completed",
-    "started": "13:14:24",
-    "duration": "2.0s",
-    "tokens": 1602,
-    "cost": 0.008,
-    "gate": null,
-    "node_states": {
-      "n1": "success",
-      "n2": "success",
-      "n_mvq8dpr1_56zh": "pending"
-    },
-    "timeline": [
-      {
-        "seq": 1,
-        "nodeId": "n1",
-        "label": "开始",
-        "status": "success",
-        "started": "13:14:25",
-        "duration": "1.0s",
-        "tokens": 800,
-        "cost": 0.004,
-        "model": "Claude-Opus-4.5",
-        "input": {
-          "binding": "trigger.payload",
-          "payload": {
-            "workflow": "default-workflow"
-          }
-        },
-        "reasoning": "开始 节点按配置完成模拟推理，输出结构化结果。",
-        "tools": [],
-        "output": {
-          "status": "success",
-          "tokens": 800,
-          "cost": 0.004
-        },
-        "evidence": [
-          "trace:n1:1",
-          "log:n1:1"
-        ],
-        "gate": null
+        "nodeId": "e5",
+        "msg": "节点「购物车结算」执行成功 · 全选联动 / 未选中置灰¥0 通过",
+        "time": "15:08:07"
       },
       {
-        "seq": 2,
-        "nodeId": "n2",
-        "label": "需求解析",
-        "status": "success",
-        "started": "13:14:26",
-        "duration": "1.0s",
-        "tokens": 802,
-        "cost": 0.004,
-        "model": "Qwen3-Max",
-        "input": {
-          "binding": "$.n2.input",
-          "payload": {
-            "workflow": "default-workflow"
-          }
-        },
-        "reasoning": "需求解析 节点按配置完成模拟推理，输出结构化结果。",
-        "tools": [],
-        "output": {
-          "status": "success",
-          "tokens": 802,
-          "cost": 0.004
-        },
-        "evidence": [
-          "trace:n2:2",
-          "log:n2:2"
-        ],
-        "gate": null
-      }
-    ],
-    "logs": [
-      {
-        "nodeId": "n1",
-        "msg": "节点「开始」开始执行（模型 Claude-Opus-4.5）",
-        "time": "now"
+        "nodeId": "e6",
+        "msg": "节点「下单支付」执行成功 · CA+14位 / 付款三色通过",
+        "time": "15:08:08"
       },
       {
-        "nodeId": "n1",
-        "msg": "节点「开始」执行成功 · Token 800 · 成本 ¥0.0040",
-        "time": "now"
-      },
-      {
-        "nodeId": "n2",
-        "msg": "节点「需求解析」开始执行（模型 Qwen3-Max）",
-        "time": "now"
-      },
-      {
-        "nodeId": "n2",
-        "msg": "节点「需求解析」执行成功 · Token 802 · 成本 ¥0.0040",
-        "time": "now"
+        "nodeId": "e7",
+        "msg": "节点「订单详情」执行成功 · 预订单无单号 / 支付成败差异通过",
+        "time": "15:08:09"
       },
       {
         "nodeId": "global",
-        "msg": "工作流执行完毕 · 总 Token 1602 · 总成本 ¥0.0080",
-        "time": "now"
+        "msg": "工作流执行完毕 · 总 Token 12400",
+        "time": "15:08:09"
       }
     ],
-    "created": "13:14:26"
+    "created": "2026-10-27 15:08:00"
   }
 }

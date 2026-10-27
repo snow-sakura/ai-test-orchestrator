@@ -1,10 +1,10 @@
 <template>
-  <div class="p-6 space-y-4">
-    <!-- 顶部操作栏 -->
-    <div class="flex items-center justify-between">
+  <div class="space-y-4">
+    <!-- 页头（竞品对齐：page-header / page-title） -->
+    <div class="page-header">
       <div>
-        <h2 class="text-lg font-bold text-polaroid-warm-800">开放能力控制台</h2>
-        <p class="text-xs text-polaroid-warm-600 mt-0.5">
+        <h1 class="page-title">开放能力控制台</h1>
+        <p class="text-xs text-polaroid-warm-500 mt-0.5">
           {{ filteredCaps.length }} 项可调用能力 · 鉴权授权 · 危险操作审批 · 调用日志（PRD §6.1）
         </p>
       </div>

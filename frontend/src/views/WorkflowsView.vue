@@ -1,10 +1,10 @@
 <template>
-  <div class="p-6 space-y-6">
-    <!-- 顶部操作栏 -->
-    <div class="flex items-center justify-between">
+  <div class="space-y-6">
+    <!-- 页头（竞品对齐：page-header / page-title） -->
+    <div class="page-header">
       <div>
-        <h2 class="text-lg font-bold text-polaroid-warm-800">工作流列表</h2>
-        <p class="text-xs text-polaroid-warm-600 mt-0.5">共 {{ filteredWorkflows.length }} 个工作流 · 支持增删改查、发布状态、范式模板</p>
+        <h1 class="page-title">工作流列表</h1>
+        <p class="text-xs text-polaroid-warm-500 mt-0.5">共 {{ filteredWorkflows.length }} 个工作流 · 支持增删改查、发布状态、范式模板</p>
       </div>
       <div class="flex items-center gap-3">
         <input

@@ -1,10 +1,10 @@
 <template>
-  <div class="p-6 space-y-4">
-    <!-- 顶部操作栏 -->
-    <div class="flex items-center justify-between">
+  <div class="space-y-4">
+    <!-- 页头（竞品对齐：page-header / page-title） -->
+    <div class="page-header">
       <div>
-        <h2 class="text-lg font-bold text-polaroid-warm-800">执行追踪</h2>
-        <p class="text-xs text-polaroid-warm-600 mt-0.5">
+        <h1 class="page-title">执行追踪</h1>
+        <p class="text-xs text-polaroid-warm-500 mt-0.5">
           共 {{ filteredRuns.length }} 条运行记录 · 支持按工作流 / 状态筛选 · 节点级时间线与门禁裁决
         </p>
       </div>

@@ -1,10 +1,10 @@
 <template>
-  <div class="p-6 space-y-4">
-    <!-- 顶部操作栏 -->
-    <div class="flex items-center justify-between">
+  <div class="space-y-4">
+    <!-- 页头（竞品对齐：page-header / page-title） -->
+    <div class="page-header">
       <div>
-        <h2 class="text-lg font-bold text-polaroid-warm-800">异步任务看板</h2>
-        <p class="text-xs text-polaroid-warm-600 mt-0.5">
+        <h1 class="page-title">异步任务看板</h1>
+        <p class="text-xs text-polaroid-warm-500 mt-0.5">
           共 {{ allTasks.length }} 项异步任务 · 支持轮询/回调、结果回写、超时与取消（PRD §6.4）
         </p>
       </div>
@@ -15,7 +15,7 @@
     </div>
 
     <!-- 筛选栏 -->
-    <div class="flex items-center gap-2 flex-wrap">
+    <div class="filter-bar">
       <input
         v-model="search"
         placeholder="搜索任务名称..."

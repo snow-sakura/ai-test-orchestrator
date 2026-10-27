@@ -1,12 +1,14 @@
 <template>
-  <div class="p-6 space-y-6">
-    <!-- 欢迎横幅 -->
-    <div class="polaroid-card rounded-lg p-6 flex items-center justify-between bg-gradient-to-r from-polaroid-warm-100 to-polaroid-warm-200">
+  <div class="space-y-6">
+    <!-- 页头（竞品对齐：page-header / page-title） -->
+    <div class="page-header">
       <div>
-        <h2 class="text-xl font-bold text-polaroid-warm-800">下午好，雪 樱 👋</h2>
-        <p class="text-sm text-polaroid-warm-600 mt-1">今天有 <span class="font-semibold text-polaroid-warm-700">{{ pendingCount }}</span> 项待办审批，<span class="font-semibold text-polaroid-warm-700">{{ runningCount }}</span> 个运行进行中</p>
+        <h1 class="page-title">工作台总览</h1>
+        <p class="text-xs text-polaroid-warm-500 mt-0.5">
+          {{ pendingCount }} 项待办审批 · {{ runningCount }} 个运行进行中
+        </p>
       </div>
-      <button @click="goTo('/workflows')" class="px-4 py-2 bg-polaroid-warm-500 text-white text-sm rounded-lg hover:bg-polaroid-warm-600 shadow-sm transition-colors">新建工作流 →</button>
+      <button @click="goTo('/workflows')" class="px-4 py-2 bg-polaroid-warm-500 text-white text-sm rounded-lg hover:bg-polaroid-warm-600 shadow-sm transition-colors">＋ 新建工作流</button>
     </div>
 
     <!-- KPI 卡片 -->

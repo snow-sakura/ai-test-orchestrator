@@ -2,85 +2,28 @@
   "default-workflow": {
     "id": "default-workflow",
     "name": "我的第一个测试工作流",
+    "status": "draft",
     "nodes": [
       {
         "id": "n1",
         "label": "开始",
-        "type": "custom",
+        "type": "platform",
         "position": {
-          "x": 80.0,
-          "y": 120.0
+          "x": 80,
+          "y": 120
         },
-        "data": {
-          "category": "platform",
-          "label": "开始",
-          "desc": "工作流入口",
-          "status": "pending"
-        },
-        "config": {
-          "toolWhitelist": [],
-          "skills": [],
-          "rules": [],
-          "inputBindings": [],
-          "outputSchemaText": "{}"
-        }
+        "config": {}
       },
       {
         "id": "n2",
         "label": "需求解析",
-        "type": "custom",
+        "type": "analysis",
         "position": {
-          "x": 320.0,
-          "y": 120.0
-        },
-        "data": {
-          "category": "analysis",
-          "label": "需求解析",
-          "desc": "解析需求文档，抽取可测需求点与验收条件",
-          "status": "pending"
+          "x": 320,
+          "y": 120
         },
         "config": {
-          "toolWhitelist": [],
-          "skills": [],
-          "rules": [],
-          "inputBindings": [],
-          "outputSchemaText": "{}",
-          "model": "Qwen3-Max",
-          "systemPrompt": "V13 提示词验证"
-        }
-      },
-      {
-        "id": "n_mvq8dpr1_56zh",
-        "label": "需求解析",
-        "type": "custom",
-        "position": {
-          "x": 176.51305944074466,
-          "y": 293.8812975539731
-        },
-        "data": {
-          "category": "analysis",
-          "label": "需求解析",
-          "desc": "解析需求文档，抽取可测需求点与验收条件",
-          "status": "pending"
-        },
-        "config": {
-          "toolWhitelist": [],
-          "skills": [],
-          "rules": [],
-          "inputBindings": [],
-          "outputSchemaText": "{}",
-          "model": "Claude-Opus-4.5",
-          "temperature": 0.2,
-          "topP": 0.9,
-          "systemPrompt": "",
-          "userPrompt": "",
-          "outputSchema": {},
-          "maxSteps": 10,
-          "timeoutSec": 120,
-          "tokenBudget": 4000,
-          "retry": 1,
-          "asyncMode": false,
-          "resources": []
+          "model": "Agnes 3.0 Flash"
         }
       }
     ],
@@ -89,6 +32,134 @@
         "id": "e1",
         "source": "n1",
         "target": "n2"
+      }
+    ]
+  },
+  "wf_ego_mini": {
+    "id": "wf_ego_mini",
+    "name": "Ego 微商小程序全链路",
+    "status": "published",
+    "nodes": [
+      {
+        "id": "e1",
+        "label": "开始",
+        "type": "platform",
+        "position": {
+          "x": 80,
+          "y": 160
+        },
+        "config": {}
+      },
+      {
+        "id": "e2",
+        "label": "主页渲染",
+        "type": "ui",
+        "position": {
+          "x": 320,
+          "y": 80
+        },
+        "config": {
+          "model": "Agnes 3.0 Flash",
+          "toolWhitelist": [
+            "screenshot",
+            "webFetch"
+          ]
+        }
+      },
+      {
+        "id": "e3",
+        "label": "分类浏览",
+        "type": "ui",
+        "position": {
+          "x": 320,
+          "y": 220
+        },
+        "config": {
+          "model": "Agnes 3.0 Flash",
+          "toolWhitelist": [
+            "screenshot"
+          ]
+        }
+      },
+      {
+        "id": "e4",
+        "label": "加购",
+        "type": "ui",
+        "position": {
+          "x": 560,
+          "y": 80
+        },
+        "config": {
+          "model": "Agnes 3.0 Flash"
+        }
+      },
+      {
+        "id": "e5",
+        "label": "购物车结算",
+        "type": "ui",
+        "position": {
+          "x": 560,
+          "y": 220
+        },
+        "config": {
+          "model": "Agnes 3.0 Flash"
+        }
+      },
+      {
+        "id": "e6",
+        "label": "下单支付",
+        "type": "action",
+        "position": {
+          "x": 800,
+          "y": 160
+        },
+        "config": {
+          "model": "Agnes 3.0 Flash"
+        }
+      },
+      {
+        "id": "e7",
+        "label": "订单详情",
+        "type": "ui",
+        "position": {
+          "x": 1040,
+          "y": 160
+        },
+        "config": {
+          "model": "Agnes 3.0 Flash"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "ee1",
+        "source": "e1",
+        "target": "e2"
+      },
+      {
+        "id": "ee2",
+        "source": "e2",
+        "target": "e3"
+      },
+      {
+        "id": "ee3",
+        "source": "e3",
+        "target": "e4"
+      },
+      {
+        "id": "ee4",
+        "source": "e4",
+        "target": "e5"
+      },
+      {
+        "id": "ee5",
+        "source": "e5",
+        "target": "e6"
+      },
+      {
+        "id": "ee6",
+        "source": "e6",
+        "target": "e7"
       }
     ]
   }

@@ -1093,6 +1093,7 @@ MODEL_REGISTRY = [
     {"id": "gpt_4o", "name": "GPT-4o", "vendor": "OpenAI", "kind": "多模态", "tier": "中", "context": "128K", "dailyLimit": 2000, "pricePerMIn": 2.5, "pricePerMOut": 10.0, "desc": "多模态理解，适合 UI 截图分析"},
     {"id": "qwen3_max", "name": "Qwen3-Max", "vendor": "Alibaba", "kind": "文本", "tier": "中", "context": "256K", "dailyLimit": 3000, "pricePerMIn": 1.5, "pricePerMOut": 4.5, "desc": "中文理解与代码生成强项"},
     {"id": "claude_opus_4_5_vision", "name": "Claude-Opus-4.5-Vision", "vendor": "Anthropic", "kind": "视觉", "tier": "高", "context": "200K", "dailyLimit": 200, "pricePerMIn": 15.0, "pricePerMOut": 75.0, "desc": "视觉理解，适合缺陷截图识别"},
+    {"id": "agnes_3_0_flash", "name": "Agnes 3.0 Flash", "vendor": "Agnes", "kind": "文本", "tier": "高", "context": "128K", "dailyLimit": 2000, "pricePerMIn": 0.01, "pricePerMOut": 0.04, "desc": "Agnes 高速推理模型，基于 OpenAI 兼容协议（https://apihub.agnes-ai.com/v1），上下文 128K，temperature 0.2，maxTokens 128000。当前编码工具 qwen-code 默认模型。"},
 ]
 
 
@@ -1116,9 +1117,8 @@ def seed_models():
     store["registry"] = MODEL_REGISTRY
     # 三层配置（PRD §6.5：全站级 / 个人级 / 角色级）
     store["configs"] = {
-        "global": {"level": "全站", "textModel": "claude_sonnet_4_5", "visionModel": "claude_opus_4_5_vision", "params": {"temperature": 0.2, "maxTokens": 4096}, "keyMasked": "sk-ant-••••••••7f3a", "connected": True, "keyMaskedSource": "管理员"},
+        "global": {"level": "全站", "owner": "", "textModel": "agnes_3_0_flash", "visionModel": "claude_opus_4_5_vision", "params": {"temperature": 0.2, "maxTokens": 128000}, "keyMasked": "sk-E5A4••••••••2zabgJriV", "connected": True, "keyMaskedSource": "管理员", "baseUrl": "https://apihub.agnes-ai.com/v1", "envKey": "CHERRY_QWEN_API_KEY"},
         "personal_test_lead": {"level": "个人", "owner": "测试负责人", "textModel": "qwen3_max", "visionModel": "gpt_4o", "params": {"temperature": 0.3, "maxTokens": 8192}, "keyMasked": "sk-alb-••••••••9c2d", "connected": True, "keyMaskedSource": "个人自带凭据"},
-        "role_gate_judge": {"level": "角色", "owner": "质量门禁裁决节点", "textModel": "claude_opus_4_5", "visionModel": "", "params": {"temperature": 0.0, "maxTokens": 2048}, "keyMasked": "sk-ant-••••••••7f3a", "connected": True, "keyMaskedSource": "继承全站"},
         "role_case_generator": {"level": "角色", "owner": "用例生成节点", "textModel": "gemini_2_5_pro", "visionModel": "", "params": {"temperature": 0.4, "maxTokens": 16384}, "keyMasked": "sk-goo-••••••••4e1b", "connected": False, "keyMaskedSource": "角色独立凭据"},
     }
     # 额度授予记录（PRD §6.5：按自然日叠加额外使用次数，可叠加、可撤销，按账号查询）

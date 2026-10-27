@@ -1,10 +1,10 @@
 <template>
-  <div class="p-6 space-y-4">
-    <!-- 顶部操作栏 -->
-    <div class="flex items-center justify-between">
+  <div class="space-y-4">
+    <!-- 页头（竞品对齐：page-header / page-title） -->
+    <div class="page-header">
       <div>
-        <h2 class="text-lg font-bold text-polaroid-warm-800">审计证据账本</h2>
-        <p class="text-xs text-polaroid-warm-600 mt-0.5">
+        <h1 class="page-title">审计证据账本</h1>
+        <p class="text-xs text-polaroid-warm-500 mt-0.5">
           共 {{ filteredEvents.length }} 条证据 · 哈希链不可篡改 · 支持按类型 / 工作流 / 节点 / 证据 ID 查询（PRD §6.6）
         </p>
       </div>

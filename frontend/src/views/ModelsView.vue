@@ -1,10 +1,10 @@
 <template>
-  <div class="p-6 space-y-4">
-    <!-- 顶部操作栏 -->
-    <div class="flex items-center justify-between">
+  <div class="space-y-4">
+    <!-- 页头（竞品对齐：page-header / page-title） -->
+    <div class="page-header">
       <div>
-        <h2 class="text-lg font-bold text-polaroid-warm-800">模型与额度</h2>
-        <p class="text-xs text-polaroid-warm-600 mt-0.5">
+        <h1 class="page-title">模型与额度</h1>
+        <p class="text-xs text-polaroid-warm-500 mt-0.5">
           {{ registry.length }} 个可用模型 · 三层配置（全站 / 个人 / 角色） · 额度授予与成本计量（PRD §6.5）
         </p>
       </div>

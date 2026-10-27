@@ -19,7 +19,7 @@ import json
 import os
 from playwright.async_api import async_playwright
 
-BASE = "http://localhost:5173"
+BASE = "http://127.0.0.1:5173"
 API = "http://127.0.0.1:8000"
 BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 SHOT_DIR = os.path.join(os.path.dirname(__file__), "screenshots", "v13")
@@ -88,9 +88,10 @@ def reset_all_seeds():
     _w("models.json", {
         "registry": [],
         "configs": {
-            "global": {"level": "全站", "owner": "", "textModel": "claude_sonnet_4_5", "visionModel": "claude_opus_4_5_vision",
-                       "params": {"temperature": 0.2, "maxTokens": 4096}, "keyMasked": "sk-ant-••••••••7f3a",
-                       "connected": True, "keyMaskedSource": "管理员"},
+            "global": {"level": "全站", "owner": "", "textModel": "agnes_3_0_flash", "visionModel": "claude_opus_4_5_vision",
+                       "params": {"temperature": 0.2, "maxTokens": 128000}, "keyMasked": "sk-E5A4••••••••2zabgJriV",
+                       "connected": True, "keyMaskedSource": "管理员",
+                       "baseUrl": "https://apihub.agnes-ai.com/v1", "envKey": "CHERRY_QWEN_API_KEY"},
             "personal_test_lead": {"level": "个人", "owner": "测试负责人", "textModel": "qwen3_max", "visionModel": "gpt_4o",
                                    "params": {"temperature": 0.3, "maxTokens": 8192}, "keyMasked": "sk-alb-••••••••9c2d",
                                    "connected": True, "keyMaskedSource": "个人自带凭据"},
@@ -99,14 +100,14 @@ def reset_all_seeds():
                                     "connected": False, "keyMaskedSource": "角色独立凭据"},
         },
         "grants": [
-            {"id": "grant_001", "account": "测试负责人", "model": "claude_sonnet_4_5", "date": "2026-10-26",
+            {"id": "grant_001", "account": "测试负责人", "model": "agnes_3_0_flash", "date": "2026-10-26",
              "extraQuota": 500, "revoked": False, "by": "管理员", "ts": "2026-10-26 08:00"},
         ],
         "quotas": [
-            {"account": "测试负责人", "model": "claude_sonnet_4_5", "dailyLimit": 2000, "usedToday": 1240, "extraToday": 800, "renewed": False},
+            {"account": "测试负责人", "model": "agnes_3_0_flash", "dailyLimit": 2000, "usedToday": 360, "extraToday": 0, "renewed": False},
         ],
         "usage": [
-            {"id": "u1", "model": "claude_sonnet_4_5", "workflow": "我的第一个测试工作流", "node": "需求解析",
+            {"id": "u1", "model": "agnes_3_0_flash", "workflow": "我的第一个测试工作流", "node": "需求解析",
              "tokens": 806, "cost": 0.0041, "ts": "2026-10-26 14:02"},
         ],
     })
@@ -254,7 +255,7 @@ async def run():
         # ============ ① 工作流：增删改查 ============
         print("── ① 工作流列表（增删改查）──")
         await page.goto(BASE + "/workflows", wait_until="networkidle")
-        await page.wait_for_selector("h2:has-text('工作流列表')", timeout=10000)
+        await page.wait_for_selector("h1:has-text('工作流列表')", timeout=10000)
         check(await page.locator("text=我的第一个测试工作流").count() >= 1, "查询：预置工作流渲染")
 
         # 增
@@ -343,7 +344,7 @@ async def run():
         # ============ ③ 执行追踪：重跑 + 查时间线 ============
         print("\n── ③ 执行追踪（重跑/查时间线/展开面板）──")
         await page.goto(BASE + "/runs", wait_until="networkidle")
-        await page.wait_for_selector("h2:has-text('执行追踪')", timeout=8000)
+        await page.wait_for_selector("h1:has-text('执行追踪')", timeout=8000)
         check(await page.locator(".polaroid-card.rounded-lg.p-4").count() >= 1, "查：运行记录列表渲染")
         # 重新运行（增一条运行）
         runs_before = await page.locator(".polaroid-card.rounded-lg.p-4").count()
@@ -369,7 +370,7 @@ async def run():
         # ============ ④ 资产：增/查/认证/退役 ============
         print("\n── ④ 认证资产库（增/查/认证/退役）──")
         await page.goto(BASE + "/assets", wait_until="networkidle")
-        await page.wait_for_selector("h2:has-text('认证资产库')", timeout=8000)
+        await page.wait_for_selector("h1:has-text('认证资产库')", timeout=8000)
         check(await page.locator("text=移动端登录全流程认证用例").count() >= 1, "查：预置资产渲染")
         # 增
         await page.click("button:has-text('＋ 新建资产')")
@@ -394,7 +395,7 @@ async def run():
         # ============ ⑤ 任务：提交/查/轮询/取消 ============
         print("\n── ⑤ 异步任务看板（提交/查/轮询/取消）──")
         await page.goto(BASE + "/tasks", wait_until="networkidle")
-        await page.wait_for_selector("h2:has-text('异步任务看板')", timeout=8000)
+        await page.wait_for_selector("h1:has-text('异步任务看板')", timeout=8000)
         check(await page.locator("text=支付模块异步回归测试任务").count() >= 1, "查：预置任务渲染")
         # 提交
         await page.click("button:has-text('＋ 提交任务')")
@@ -423,7 +424,7 @@ async def run():
         # ============ ⑥ 模型：授予/撤销/叠加/连接测试 ============
         print("\n── ⑥ 模型与额度（授予/撤销/叠加/连接测试）──")
         await page.goto(BASE + "/models", wait_until="networkidle")
-        await page.wait_for_selector("h2:has-text('模型与额度')", timeout=8000)
+        await page.wait_for_selector("h1:has-text('模型与额度')", timeout=8000)
         check(await page.locator(".polaroid-card.rounded-lg.p-4").count() >= 1, "查：模型注册表渲染")
         # 三层配置 Tab + 连接测试
         await page.click("button:has-text('三层配置')")
@@ -457,7 +458,7 @@ async def run():
         # ============ ⑦ 审计：追加/校验/导出 ============
         print("\n── ⑦ 审计证据账本（追加/校验/导出）──")
         await page.goto(BASE + "/audit", wait_until="networkidle")
-        await page.wait_for_selector("h2:has-text('审计证据账本')", timeout=8000)
+        await page.wait_for_selector("h1:has-text('审计证据账本')", timeout=8000)
         check(await page.locator(".polaroid-card.rounded-lg.p-4 code").count() >= 1, "查：证据列表渲染")
         # 追加
         await page.click("button:has-text('＋ 追加证据')")
@@ -481,7 +482,7 @@ async def run():
         # ============ ⑧ 能力：登记/放行审批 ============
         print("\n── ⑧ 开放能力控制台（登记/放行审批）──")
         await page.goto(BASE + "/capabilities", wait_until="networkidle")
-        await page.wait_for_selector("h2:has-text('开放能力控制台')", timeout=8000)
+        await page.wait_for_selector("h1:has-text('开放能力控制台')", timeout=8000)
         check(await page.locator("text=webFetch 工具").count() >= 1, "查：能力清单渲染")
         # 登记
         await page.click("button:has-text('＋ 登记能力')")
@@ -506,7 +507,7 @@ async def run():
         # ============ ⑨ 资源：登记池/获取锁/释放锁 ============
         print("\n── ⑨ 资源与锁管理（登记池/获取锁/释放锁）──")
         await page.goto(BASE + "/resources", wait_until="networkidle")
-        await page.wait_for_selector("h2:has-text('资源与锁管理')", timeout=8000)
+        await page.wait_for_selector("h1:has-text('资源与锁管理')", timeout=8000)
         check(await page.locator("text=移动设备池").count() >= 1, "查：资源池渲染")
         # 登记资源池
         await page.click("button:has-text('＋ 登记资源池')")
@@ -539,7 +540,7 @@ async def run():
         # ============ ⑩ 配置：改配置项/改预算策略 ============
         print("\n── ⑩ 统一配置中心（改配置项/改预算策略）──")
         await page.goto(BASE + "/settings", wait_until="networkidle")
-        await page.wait_for_selector("h2:has-text('统一配置中心')", timeout=8000)
+        await page.wait_for_selector("h1:has-text('统一配置中心')", timeout=8000)
         check(await page.locator("text=驱动配置").count() >= 1, "查：分区导航渲染")
         # 改配置项
         await page.locator("select").first.select_option(value="Selenium Chrome")
@@ -555,25 +556,25 @@ async def run():
         print("\n── ⑪ 跨模块业务串联 ──")
         # 工作台 → 各模块 → 返回
         await page.goto(BASE + "/dashboard", wait_until="networkidle")
-        await page.wait_for_selector("text=下午好，雪 樱", timeout=8000)
-        check(await page.locator("text=新建工作流 →").count() >= 1, "串联：工作台总览渲染")
+        await page.wait_for_selector("h1:has-text('工作台总览')", timeout=8000)
+        check(await page.locator("text=＋ 新建工作流").count() >= 1, "串联：工作台总览渲染")
         for route, sel in [
-            ("/workflows", "h2:has-text('工作流列表')"),
-            ("/runs", "h2:has-text('执行追踪')"),
-            ("/assets", "h2:has-text('认证资产库')"),
-            ("/tasks", "h2:has-text('异步任务看板')"),
-            ("/models", "h2:has-text('模型与额度')"),
-            ("/audit", "h2:has-text('审计证据账本')"),
-            ("/capabilities", "h2:has-text('开放能力控制台')"),
-            ("/resources", "h2:has-text('资源与锁管理')"),
-            ("/settings", "h2:has-text('统一配置中心')"),
+            ("/workflows", "h1:has-text('工作流列表')"),
+            ("/runs", "h1:has-text('执行追踪')"),
+            ("/assets", "h1:has-text('认证资产库')"),
+            ("/tasks", "h1:has-text('异步任务看板')"),
+            ("/models", "h1:has-text('模型与额度')"),
+            ("/audit", "h1:has-text('审计证据账本')"),
+            ("/capabilities", "h1:has-text('开放能力控制台')"),
+            ("/resources", "h1:has-text('资源与锁管理')"),
+            ("/settings", "h1:has-text('统一配置中心')"),
         ]:
             await page.goto(BASE + route, wait_until="networkidle")
             await page.wait_for_selector(sel, timeout=6000)
         check(True, "串联：9 个模块依次跳转无异常")
         # 编辑跳转画布（业务联系：工作流 → 画布）
         await page.goto(BASE + "/workflows", wait_until="networkidle")
-        await page.wait_for_selector("h2:has-text('工作流列表')", timeout=6000)
+        await page.wait_for_selector("h1:has-text('工作流列表')", timeout=6000)
         await wf_card(page, "我的第一个测试工作流").locator("button:has-text('编辑')").click()
         await page.wait_for_selector("text=节点模板库（PRD §11）", timeout=8000)
         check(True, "串联：工作流编辑跳转编排画布")

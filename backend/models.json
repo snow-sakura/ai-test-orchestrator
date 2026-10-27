@@ -1,19 +1,33 @@
 {
-  "registry": [],
+  "registry": [
+    {
+      "id": "agnes_3_0_flash",
+      "name": "Agnes 3.0 Flash",
+      "vendor": "Agnes",
+      "kind": "文本",
+      "tier": "高",
+      "context": "128K",
+      "dailyLimit": 2000,
+      "pricePerMIn": 0.01,
+      "pricePerMOut": 0.04,
+      "desc": "Agnes 高速推理模型，OpenAI 兼容协议，上下文 128K，temperature 0.2，maxTokens 128000。"
+    }
+  ],
   "configs": {
     "global": {
       "level": "全站",
       "owner": "",
-      "textModel": "claude_sonnet_4_5",
+      "textModel": "agnes_3_0_flash",
       "visionModel": "claude_opus_4_5_vision",
       "params": {
         "temperature": 0.2,
-        "maxTokens": 4096
+        "maxTokens": 128000
       },
-      "keyMasked": "sk-ant-••••••••7f3a",
+      "keyMasked": "sk-E5A4••••••••2zabgJriV",
       "connected": true,
       "keyMaskedSource": "管理员",
-      "lastTestAt": "2026-10-27 13:14"
+      "baseUrl": "https://apihub.agnes-ai.com/v1",
+      "envKey": "CHERRY_QWEN_API_KEY"
     },
     "personal_test_lead": {
       "level": "个人",
@@ -44,54 +58,35 @@
   },
   "grants": [
     {
-      "id": "grant_001",
+      "id": "grant_ego_001",
       "account": "测试负责人",
-      "model": "claude_sonnet_4_5",
-      "date": "2026-10-26",
-      "extraQuota": 500,
-      "revoked": true,
-      "by": "管理员",
-      "ts": "2026-10-26 08:00",
-      "revokedAt": "2026-10-27 13:14"
-    },
-    {
-      "id": "grant_034ec9",
-      "account": "测试负责人",
-      "model": "claude_opus_4_5",
+      "model": "agnes_3_0_flash",
       "date": "2026-10-27",
       "extraQuota": 500,
       "revoked": false,
       "by": "管理员",
-      "ts": "2026-10-27 13:14"
+      "ts": "2026-10-27 15:08"
     }
   ],
   "quotas": [
     {
       "account": "测试负责人",
-      "model": "claude_sonnet_4_5",
+      "model": "agnes_3_0_flash",
       "dailyLimit": 2000,
-      "usedToday": 1240,
-      "extraToday": 800,
-      "renewed": false
-    },
-    {
-      "account": "测试负责人",
-      "model": "claude_opus_4_5",
-      "dailyLimit": 500,
-      "usedToday": 0,
+      "usedToday": 360,
       "extraToday": 500,
       "renewed": false
     }
   ],
   "usage": [
     {
-      "id": "u1",
-      "model": "claude_sonnet_4_5",
-      "workflow": "我的第一个测试工作流",
-      "node": "需求解析",
-      "tokens": 806,
-      "cost": 0.0041,
-      "ts": "2026-10-26 14:02"
+      "id": "u_ego_001",
+      "model": "agnes_3_0_flash",
+      "workflow": "Ego 微商小程序全链路",
+      "node": "用例生成",
+      "tokens": 12400,
+      "cost": 0.056,
+      "ts": "2026-10-27 15:08"
     }
   ]
 }
