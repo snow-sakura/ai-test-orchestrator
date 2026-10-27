@@ -52,7 +52,7 @@
         "detail": "生成待认证"
       },
       {
-        "ts": "2026-10-27 13:11",
+        "ts": "2026-10-27 13:14",
         "action": "rejected",
         "by": "测试资产认证节点",
         "detail": "未通过质量门槛（变异分数/稳定性/副作用回归）"
@@ -83,8 +83,8 @@
     ],
     "qualityGate": "未通过"
   },
-  "asset_用例_ac4f6253": {
-    "id": "asset_用例_ac4f6253",
+  "asset_用例_8ed68454": {
+    "id": "asset_用例_8ed68454",
     "type": "用例",
     "name": "V13验证资产",
     "version": 2,
@@ -103,7 +103,7 @@
     "retireAlert": false,
     "auditLog": [
       {
-        "ts": "2026-10-27 13:11",
+        "ts": "2026-10-27 13:14",
         "action": "created",
         "by": "认证资产库",
         "detail": "新建资产待认证"

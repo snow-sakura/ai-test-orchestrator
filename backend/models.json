@@ -13,7 +13,7 @@
       "keyMasked": "sk-ant-••••••••7f3a",
       "connected": true,
       "keyMaskedSource": "管理员",
-      "lastTestAt": "2026-10-27 13:11"
+      "lastTestAt": "2026-10-27 13:14"
     },
     "personal_test_lead": {
       "level": "个人",
@@ -52,17 +52,17 @@
       "revoked": true,
       "by": "管理员",
       "ts": "2026-10-26 08:00",
-      "revokedAt": "2026-10-27 13:11"
+      "revokedAt": "2026-10-27 13:14"
     },
     {
-      "id": "grant_a31df5",
+      "id": "grant_034ec9",
       "account": "测试负责人",
       "model": "claude_opus_4_5",
       "date": "2026-10-27",
       "extraQuota": 500,
       "revoked": false,
       "by": "管理员",
-      "ts": "2026-10-27 13:11"
+      "ts": "2026-10-27 13:14"
     }
   ],
   "quotas": [

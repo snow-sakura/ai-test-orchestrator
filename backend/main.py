@@ -1417,7 +1417,7 @@ def _verify_audit_chain(items: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {
         "verified": broken_at == -1,
         "brokenAt": broken_at,
-        "lastHash": items[-1]["hash"] if items else "",
+        "lastHash": items[-1].get("hash", "") if items else "",
         "total": len(items),
     }
 
@@ -1480,7 +1480,7 @@ async def append_audit(payload: AuditNew):
         raise HTTPException(status_code=400, detail="Unsupported audit event type")
     items = load_audit()
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
-    prev_hash = items[-1]["hash"] if items else "0" * 64
+    prev_hash = items[-1].get("hash", "") if items else "0" * 64
     entry = {
         "id": f"ev_{uuid.uuid4().hex[:6]}",
         "ts": now,

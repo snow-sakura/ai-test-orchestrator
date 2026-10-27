@@ -23,13 +23,13 @@
         "detail": "任务已提交"
       },
       {
-        "ts": "2026-10-27 13:11",
+        "ts": "2026-10-27 13:14",
         "action": "polling",
         "by": "平台",
         "detail": "轮询/回调推进，进度 65%"
       },
       {
-        "ts": "2026-10-27 13:11",
+        "ts": "2026-10-27 13:14",
         "action": "canceled",
         "by": "平台",
         "detail": "手动取消任务，资源锁已释放"
@@ -62,15 +62,15 @@
       }
     ]
   },
-  "task_733a29e7": {
-    "id": "task_733a29e7",
+  "task_0f0f6a16": {
+    "id": "task_0f0f6a16",
     "type": "异步测试任务",
     "name": "V13验证任务",
     "status": "running",
     "workflow": "wf_v13",
     "node": "n_v13",
     "progress": 0,
-    "started": "2026-10-27 13:11",
+    "started": "2026-10-27 13:14",
     "eta": "计算中",
     "owner": "test-agent-new",
     "resource": "farm-v13",
@@ -81,13 +81,13 @@
     "cancel_status": "idle",
     "auditLog": [
       {
-        "ts": "2026-10-27 13:11",
+        "ts": "2026-10-27 13:14",
         "action": "submitted",
         "by": "异步任务提交节点",
         "detail": "任务已提交，立即返回任务标识与结果获取引用"
       }
     ],
-    "created": "2026-10-27 13:11",
+    "created": "2026-10-27 13:14",
     "typeLabel": "异步测试任务",
     "statusLabel": "运行中",
     "modeLabel": "轮询"
