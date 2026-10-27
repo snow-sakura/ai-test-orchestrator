@@ -78,6 +78,20 @@
       "callCount30d": 0,
       "lastCalled": "",
       "desc": "新发布工作流，包含执行类操作，等待平台侧审批后放行"
+    },
+    {
+      "id": "cap_bfc418",
+      "kind": "工作流",
+      "name": "V9 测试外部能力",
+      "source": "wf_v9_test",
+      "exposed": true,
+      "status": "active",
+      "protocol": "OpenAPI / 标准化工具协议",
+      "auth": "API Key",
+      "dangerousOps": [],
+      "callCount30d": 0,
+      "lastCalled": "",
+      "desc": "手动登记的对外能力"
     }
   ],
   "callLogs": [
@@ -124,8 +138,9 @@
       "ts": "2026-10-26 16:02",
       "capability": "Browser-use 浏览器智能体",
       "op": "修改资产",
-      "status": "待审批",
-      "by": ""
+      "status": "已放行",
+      "by": "测试负责人",
+      "approvedAt": "2026-10-27 12:00"
     },
     {
       "id": "ap_002",

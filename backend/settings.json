@@ -219,7 +219,7 @@
       "timeBudgetSec": 600,
       "onExceed": "降级输出",
       "desc": "单节点默认预算，超出即终止",
-      "updatedAt": "2026-10-27 11:34"
+      "updatedAt": "2026-10-27 12:00"
     },
     {
       "id": "budget_wf",

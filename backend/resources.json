@@ -146,7 +146,7 @@
       ]
     },
     {
-      "id": "pool_95b430",
+      "id": "pool_75421c",
       "type": "数据源",
       "name": "V10 测试数据源池",
       "total": 0,
@@ -166,7 +166,7 @@
       "ttl": 180,
       "autoRelease": true,
       "status": "free",
-      "releasedAt": "2026-10-27 11:26:28",
+      "releasedAt": "2026-10-27 12:00:18",
       "releasedBy": "平台管理员"
     },
     {
@@ -203,12 +203,12 @@
       "status": "locked"
     },
     {
-      "id": "lock_53c048",
+      "id": "lock_ce669e",
       "resourceId": "dev_d",
       "poolId": "",
       "mode": "独占锁",
       "holder": "V10 测试 · n_v10",
-      "acquiredAt": "2026-10-27 11:26:28",
+      "acquiredAt": "2026-10-27 12:00:18",
       "ttl": 600,
       "autoRelease": true,
       "status": "locked"
@@ -256,16 +256,16 @@
       "detail": "节点完成，主动释放独占锁"
     },
     {
-      "id": "evt_6508e2",
-      "ts": "2026-10-27 11:26:28",
+      "id": "evt_a31ef8",
+      "ts": "2026-10-27 12:00:18",
       "resourceId": "dev_d",
       "action": "获取",
       "actor": "V10 测试 · n_v10",
       "detail": "获取 独占锁（TTL 600s）"
     },
     {
-      "id": "evt_f7a33b",
-      "ts": "2026-10-27 11:26:28",
+      "id": "evt_b61bad",
+      "ts": "2026-10-27 12:00:18",
       "resourceId": "dev_a",
       "action": "释放",
       "actor": "平台管理员",

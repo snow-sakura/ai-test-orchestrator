@@ -82,5 +82,17 @@
     "refId": "trace:run_seed_001:n2",
     "prevHash": "d21ac61fc4a35adb56c974fc2bf4cab61aa2e94ce4b08e9dfdee084c7c48ab9e",
     "hash": "46d2e07cdc743bff76a0c52fbea058f6fb1db84bb3f0dfa90eb750999abaf0f2"
+  },
+  {
+    "id": "ev_a1128b",
+    "ts": "2026-10-27 12:00",
+    "type": "工具调用",
+    "workflow": "V8 测试工作流",
+    "node": "测试节点",
+    "actor": "测试负责人",
+    "detail": "V8 自动验证追加的证据条目",
+    "refId": "manual:v8_test",
+    "prevHash": "46d2e07cdc743bff76a0c52fbea058f6fb1db84bb3f0dfa90eb750999abaf0f2",
+    "hash": "99afc9a96cc03aa7296edc68f75afe2f8efaa34aeb8b4e40639151c6d275b8de"
   }
 ]

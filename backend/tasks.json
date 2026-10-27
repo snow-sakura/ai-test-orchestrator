@@ -3,12 +3,12 @@
     "id": "task_running_001",
     "type": "异步测试任务",
     "name": "支付模块异步回归测试任务",
-    "status": "running",
+    "status": "timeout",
     "workflow": "wf_payment_regression",
     "node": "n_async_regression",
-    "progress": 62,
+    "progress": 87,
     "started": "2026-10-26 14:02",
-    "eta": "约 8 分钟",
+    "eta": "已超时",
     "owner": "test-agent-01",
     "resource": "browser-farm-A",
     "result_ref": "var://wf_payment_regression/result_async",
@@ -27,28 +27,40 @@
         "ts": "2026-10-26 14:35",
         "action": "polling",
         "by": "平台",
-        "detail": "第 2026-10-26 20:28 轮轮询，进度 62%"
+        "detail": "第 15:00 轮轮询，进度 62%"
+      },
+      {
+        "ts": "2026-10-27 11:59",
+        "action": "polling",
+        "by": "平台",
+        "detail": "轮询/回调推进，进度 87%"
+      },
+      {
+        "ts": "2026-10-27 11:59",
+        "action": "timeout",
+        "by": "平台",
+        "detail": "超过最大执行时长（1800s），按策略终止，转人工处理"
       }
     ],
-    "created": "2026-10-26 20:28"
+    "created": "2026-10-26 15:00"
   },
   "task_running_002": {
     "id": "task_running_002",
     "type": "外部智能体任务",
     "name": "Browser-use 智能探索外部调用",
-    "status": "running",
+    "status": "canceled",
     "workflow": "wf_explore",
     "node": "n_external_agent",
     "progress": 38,
     "started": "2026-10-26 13:48",
-    "eta": "约 15 分钟",
+    "eta": "已取消",
     "owner": "external-agent-7",
     "resource": "web-farm-B",
     "result_ref": "var://wf_explore/external_result",
     "poll_interval": 0,
     "timeout_sec": 3600,
     "mode": "callback",
-    "cancel_status": "idle",
+    "cancel_status": "done",
     "auditLog": [
       {
         "ts": "2026-10-26 13:48",
@@ -61,9 +73,15 @@
         "action": "callback",
         "by": "external-agent-7",
         "detail": "回调事件已接收，进度 38%"
+      },
+      {
+        "ts": "2026-10-27 11:59",
+        "action": "canceled",
+        "by": "平台",
+        "detail": "手动取消任务，资源锁已释放"
       }
     ],
-    "created": "2026-10-26 20:28"
+    "created": "2026-10-26 15:00"
   },
   "task_success_001": {
     "id": "task_success_001",
@@ -96,7 +114,7 @@
         "detail": "结果已写回变量池 var://wf_api_daily/regression_result，唤醒下游节点"
       }
     ],
-    "created": "2026-10-26 20:28"
+    "created": "2026-10-26 15:00"
   },
   "task_failed_001": {
     "id": "task_failed_001",
@@ -129,7 +147,7 @@
         "detail": "数据源连接超时，任务失败，未回写结果"
       }
     ],
-    "created": "2026-10-26 20:28"
+    "created": "2026-10-26 15:00"
   },
   "task_timeout_001": {
     "id": "task_timeout_001",
@@ -162,7 +180,7 @@
         "detail": "超过最大执行时长（900s），按策略终止，未回写结果，转人工处理"
       }
     ],
-    "created": "2026-10-26 20:28"
+    "created": "2026-10-26 15:00"
   },
   "task_canceled_001": {
     "id": "task_canceled_001",
@@ -195,6 +213,36 @@
         "detail": "手动取消任务，资源锁已释放"
       }
     ],
-    "created": "2026-10-26 20:28"
+    "created": "2026-10-26 15:00"
+  },
+  "task_6d02b903": {
+    "id": "task_6d02b903",
+    "type": "异步测试任务",
+    "name": "V6 自动测试任务",
+    "status": "running",
+    "workflow": "wf_v6_test",
+    "node": "n_v6_test",
+    "progress": 0,
+    "started": "2026-10-27 11:59",
+    "eta": "计算中",
+    "owner": "test-agent-new",
+    "resource": "browser-farm-G",
+    "result_ref": "var://wf_v6_test/result",
+    "poll_interval": 15,
+    "timeout_sec": 3600,
+    "mode": "poll",
+    "cancel_status": "idle",
+    "auditLog": [
+      {
+        "ts": "2026-10-27 11:59",
+        "action": "submitted",
+        "by": "异步任务提交节点",
+        "detail": "任务已提交，立即返回任务标识与结果获取引用"
+      }
+    ],
+    "created": "2026-10-27 11:59",
+    "typeLabel": "异步测试任务",
+    "statusLabel": "运行中",
+    "modeLabel": "轮询"
   }
 }

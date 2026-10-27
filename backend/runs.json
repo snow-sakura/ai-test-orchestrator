@@ -111,13 +111,13 @@
     ],
     "created": "16:42:00"
   },
-  "5d037b50-4fb8-46c7-b755-1289bc22ee98": {
-    "id": "5d037b50-4fb8-46c7-b755-1289bc22ee98",
+  "31c3eb8b-d9f0-422f-9117-60c04fdc79a3": {
+    "id": "31c3eb8b-d9f0-422f-9117-60c04fdc79a3",
     "workflow_id": "default-workflow",
     "workflow_name": "我的第一个测试工作流",
     "trigger": "手动",
     "status": "completed",
-    "started": "19:23:57",
+    "started": "11:59:37",
     "duration": "2.0s",
     "tokens": 1600,
     "cost": 0.008,
@@ -125,7 +125,7 @@
     "node_states": {
       "n1": "success",
       "n2": "success",
-      "n_mvp5thpb_0j2e": "pending"
+      "n_mvq5pgui_yp3c": "pending"
     },
     "timeline": [
       {
@@ -133,7 +133,7 @@
         "nodeId": "n1",
         "label": "开始",
         "status": "success",
-        "started": "19:23:58",
+        "started": "11:59:38",
         "duration": "1.0s",
         "tokens": 800,
         "cost": 0.004,
@@ -162,7 +162,7 @@
         "nodeId": "n2",
         "label": "需求解析",
         "status": "success",
-        "started": "19:23:59",
+        "started": "11:59:39",
         "duration": "1.0s",
         "tokens": 800,
         "cost": 0.004,
@@ -214,6 +214,6 @@
         "time": "now"
       }
     ],
-    "created": "19:23:59"
+    "created": "11:59:39"
   }
 }
