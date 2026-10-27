@@ -1143,8 +1143,8 @@ def seed_models():
 
 
 def _model_by_id(model_id: str) -> Dict[str, Any]:
-    for m in MODEL_REGISTRY:
-        if m["id"] == model_id:
+    for m in _registry_from_store():
+        if m.get("id") == model_id:
             return m
     return {"id": model_id, "name": model_id}
 
@@ -1172,6 +1172,8 @@ class ConfigNew(BaseModel):
     visionModel: str = ""
     params: Optional[Dict] = {}
     keyMasked: str = ""
+    baseUrl: str = ""
+    envKey: str = ""
 
 
 class GrantNew(BaseModel):
@@ -1187,10 +1189,19 @@ class RenewQuota(BaseModel):
     date: str = ""
 
 
+def _registry_from_store() -> list:
+    """以 models.json 的 registry 为准；缺失时回退硬编码常量（PRD §6.5）"""
+    store = load_models()
+    items = store.get("registry") or []
+    if not items:
+        return list(MODEL_REGISTRY)
+    return items
+
+
 @app.get("/models/meta")
 async def model_meta():
     return {
-        "registry": MODEL_REGISTRY,
+        "registry": _registry_from_store(),
         "configLevels": ["全站", "个人", "角色"],
         "note": "密钥不明文落盘，仅保存掩码；额度按自然日叠加，可撤销；用量支持按工作流 / 节点 / 账号查看。",
     }
@@ -1198,7 +1209,7 @@ async def model_meta():
 
 @app.get("/models/registry")
 async def model_registry():
-    return MODEL_REGISTRY
+    return _registry_from_store()
 
 
 @app.get("/models/configs")
@@ -1220,6 +1231,7 @@ async def upsert_model_config(payload: ConfigNew):
     store = load_models()
     configs = store.setdefault("configs", {})
     key = payload.level.lower() if payload.level == "全站" else f"{payload.level.lower()}_{payload.owner or 'default'}"
+    prev = configs.get(key, {})
     cfg = {
         "level": payload.level,
         "owner": payload.owner,
@@ -1227,6 +1239,8 @@ async def upsert_model_config(payload: ConfigNew):
         "visionModel": payload.visionModel,
         "params": payload.params or {},
         "keyMasked": payload.keyMasked,
+        "baseUrl": payload.baseUrl or prev.get("baseUrl", ""),
+        "envKey": payload.envKey or prev.get("envKey", ""),
         "connected": False,
         "keyMaskedSource": payload.level,
     }

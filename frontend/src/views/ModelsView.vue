@@ -72,6 +72,9 @@
               <div class="text-[11px] text-polaroid-warm-400 mt-1">
                 🔑 {{ c.keyMasked }}（{{ c.keyMaskedSource }}）
               </div>
+              <div class="text-[11px] text-polaroid-warm-400 mt-1">
+                端点：{{ c.baseUrl || '—' }} · 密钥来源：{{ c.envKey || '—' }}
+              </div>
             </div>
             <div class="flex items-center gap-1 shrink-0 flex-col">
               <button @click="testConfig(c)" class="text-xs px-2 py-1 bg-polaroid-warm-500 text-white rounded hover:bg-polaroid-warm-600">连接测试</button>
@@ -211,6 +214,10 @@
         </div>
         <label class="block text-xs font-medium opacity-60 mt-3 mb-1">密钥（掩码）</label>
         <input v-model="editForm.keyMasked" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none" placeholder="sk-••••••••" />
+        <label class="block text-xs font-medium opacity-60 mt-3 mb-1">端点 baseUrl</label>
+        <input v-model="editForm.baseUrl" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none" placeholder="https://api.example.com/v1" />
+        <label class="block text-xs font-medium opacity-60 mt-3 mb-1">密钥环境变量</label>
+        <input v-model="editForm.envKey" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none" placeholder="MY_API_KEY" />
         <div class="flex justify-end gap-2">
           <button @click="editModal = false" class="px-3 py-1.5 text-sm border border-polaroid-warm-300 rounded-lg hover:bg-polaroid-warm-100">取消</button>
           <button @click="confirmEditConfig" class="px-4 py-1.5 text-sm bg-polaroid-warm-500 text-white rounded-lg hover:bg-polaroid-warm-600">保存</button>
@@ -247,7 +254,7 @@ const grantModal = ref(false)
 const newGrant = ref({ account: '测试负责人', model: '', extraQuota: 100 })
 
 const editModal = ref(false)
-const editForm = reactive({ configKey: '', owner: '', level: '', textModel: '', visionModel: '', temperature: 0.2, maxTokens: 4096, keyMasked: '' })
+const editForm = reactive({ configKey: '', owner: '', level: '', textModel: '', visionModel: '', temperature: 0.2, maxTokens: 4096, keyMasked: '', baseUrl: '', envKey: '' })
 
 const toast = ref('')
 let toastTimer = null
@@ -305,6 +312,8 @@ function openEditConfig(c) {
   editForm.temperature = c.params?.temperature ?? 0.2
   editForm.maxTokens = c.params?.maxTokens ?? 4096
   editForm.keyMasked = c.keyMasked || ''
+  editForm.baseUrl = c.baseUrl || ''
+  editForm.envKey = c.envKey || ''
   editModal.value = true
 }
 
@@ -317,6 +326,8 @@ async function confirmEditConfig() {
       visionModel: editForm.visionModel,
       params: { temperature: editForm.temperature, maxTokens: editForm.maxTokens },
       keyMasked: editForm.keyMasked,
+      baseUrl: editForm.baseUrl,
+      envKey: editForm.envKey,
     })
     await refresh()
     editModal.value = false

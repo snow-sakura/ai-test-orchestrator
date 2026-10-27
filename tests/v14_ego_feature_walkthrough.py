@@ -357,6 +357,7 @@ def ego_rule_checks(page):
         ("ego_task_visible", "§B Ego 异步任务在平台可见"),
         ("ego_agnes_visible", "§B Agnes 3.0 Flash 在模型注册表可见"),
         ("ego_key_masked", "§B 掩码密钥 sk-E5A4… 在三层配置可见（不含明文）"),
+        ("ego_baseurl_visible", "§B 三层配置端点 baseUrl/密钥环境变量 CHERRY_QWEN_API_KEY 可见"),
     ]
 
 
@@ -451,6 +452,9 @@ async def ego_rule_fact(page, route, check_name):
     if check_name == "ego_key_masked":
         body = await page.inner_text("body")
         return "sk-E5A4" in body and "sk-E5A4BXwmPvyYXccHiaFleQbcvTBKkk5rBHbC58R2zabgJriV" not in body, "掩码 sk-E5A4 可见且无明文泄露"
+    if check_name == "ego_baseurl_visible":
+        body = await page.inner_text("body")
+        return "apihub.agnes-ai.com/v1" in body and "CHERRY_QWEN_API_KEY" in body, "端点 baseUrl + 密钥环境变量 CHERRY_QWEN_API_KEY 可见"
     return False, f"未实现检查 {check_name}"
 
 
@@ -462,6 +466,7 @@ RULE_PAGE_MAP = {
     "ego_task_visible": "/tasks",
     "ego_agnes_visible": "/models",
     "ego_key_masked": "/models",
+    "ego_baseurl_visible": "/models",
 }
 
 
@@ -588,7 +593,7 @@ async def run():
                 await card.first.wait_for(state="visible", timeout=8000)
                 await card.first.click()
                 await page.wait_for_selector("text=run_ego_001", timeout=8000)
-            elif check_name == "ego_key_masked":
+            elif check_name in ("ego_key_masked", "ego_baseurl_visible"):
                 await page.locator("button:has-text('三层配置')").click()
             ok, detail = await ego_rule_fact(page, route, check_name)
             check(ok, f"{label} · {detail}")
