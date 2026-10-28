@@ -216,7 +216,7 @@ export const useWorkflowStore = defineStore('workflow', {
         position: { x: 120 + Math.random() * 180, y: 120 + Math.random() * 180 },
         data: { category, label, desc, status: 'pending' },
         config: {
-          model: 'Claude-Opus-4.5',
+          model: 'Agnes 3.0 Flash',
           temperature: 0.2,
           topP: 0.9,
           systemPrompt: '',

@@ -248,6 +248,10 @@ async def run():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False, args=["--no-default-browser-check"])
         page = await browser.new_page(viewport={"width": 1680, "height": 1000})
+        # V15 登录守卫：预置 localStorage 已登录态，使 router.beforeEach 放行模块页直达
+        await page.add_init_script(
+            "localStorage.setItem('aio_auth', JSON.stringify({name:'雪 樱',role:'测试负责人',avatar:'雪',lastLoginAt:'2026-10-27'}))"
+        )
         errors = []
         page.on("pageerror", lambda e: errors.append(str(e)))
         print("🌐 有头浏览器已打开（非后台运行）\n")
@@ -317,9 +321,9 @@ async def run():
         # 展开 模型配置 分区（抽屉默认只展开 基础信息）
         await page.locator("aside button:has-text('模型配置')").click()
         await page.wait_for_selector("aside select", timeout=5000)
-        await page.locator("aside select").first.select_option(value="Qwen3-Max")
+        await page.locator("aside select").first.select_option(value="Agnes 3.0 Flash")
         await page.wait_for_timeout(300)
-        check(True, "改：节点模型切换为 Qwen3-Max")
+        check(True, "改：节点模型切换为 Agnes 3.0 Flash")
         # 改提示词（展开 提示词配置 分区）
         await page.locator("aside button:has-text('提示词配置')").click()
         await page.wait_for_selector("aside textarea", timeout=5000)

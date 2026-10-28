@@ -1,18 +1,18 @@
 <template>
-  <div class="h-full w-full flex bg-polaroid-warm-50">
+  <div class="h-full w-full flex bg-competitor-main">
     <!-- 左侧节点模板库（画布专属） -->
-    <div class="w-56 border-r border-polaroid-warm-200 bg-white flex flex-col shrink-0">
-      <div class="p-3 border-b border-polaroid-warm-200">
-        <div class="text-xs font-bold mb-2 opacity-60">节点模板库（PRD §11）</div>
+    <div class="w-56 border-r border-competitor-border bg-white flex flex-col shrink-0">
+      <div class="p-3 border-b border-competitor-border">
+        <div class="text-xs font-bold mb-2 text-competitor-text-2">节点模板库（PRD §11）</div>
         <input
           v-model="nodeSearch"
           placeholder="搜索节点..."
-          class="w-full p-1.5 text-xs border border-polaroid-warm-200 rounded outline-none focus:ring-1 focus:ring-polaroid-warm-400"
+          class="w-full p-1.5 text-xs border border-competitor-border rounded outline-none focus:ring-1 focus:ring-competitor-primary"
         />
       </div>
       <div class="flex-1 overflow-y-auto p-3 space-y-4">
         <div v-for="cat in filteredCategories" :key="cat.key">
-          <div class="text-xs font-semibold mb-2 text-polaroid-warm-600">{{ cat.name }}</div>
+          <div class="text-xs font-semibold mb-2 text-competitor-text">{{ cat.name }}</div>
           <div class="grid grid-cols-1 gap-1.5">
             <div
               v-for="n in cat.nodes"
@@ -20,7 +20,7 @@
               draggable="true"
               @click.stop="onAddNode(cat.key, n.label)"
               @dragstart="onDragStart(cat.key, n.label, $event)"
-              class="p-2 text-xs border border-polaroid-warm-200 rounded bg-white hover:border-polaroid-warm-400 cursor-grab transition-all shadow-sm text-polaroid-warm-800"
+              class="p-2 text-xs border border-competitor-border rounded bg-white hover:border-competitor-primary cursor-grab transition-all shadow-sm text-competitor-text"
               :title="n.desc"
             >
               {{ n.label }}
@@ -33,25 +33,25 @@
     <!-- 画布主体 -->
     <div class="flex-1 relative">
       <!-- 画布操作栏（PRD §3.3） -->
-      <div class="h-11 border-b border-polaroid-warm-200 bg-white/80 flex items-center px-4 gap-3">
-        <button @click="goBack" class="text-xs px-2 py-1 rounded border border-polaroid-warm-300 hover:bg-polaroid-warm-100">←</button>
+      <div class="h-11 border-b border-competitor-border bg-white flex items-center px-4 gap-3">
+        <button @click="goBack" class="text-xs px-2 py-1 rounded border border-competitor-border hover:bg-competitor-main">←</button>
         <input
           v-model="workflowStore.currentWorkflow.name"
-          class="w-48 text-sm font-medium border border-polaroid-warm-200 rounded px-2 py-0.5 outline-none focus:ring-1 focus:ring-polaroid-warm-400"
+          class="w-48 text-sm font-medium border border-competitor-border rounded px-2 py-0.5 outline-none focus:ring-1 focus:ring-competitor-primary"
         />
         <span class="text-xs px-2 py-0.5 rounded-full"
           :class="workflowStore.isSaving ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'">
           {{ workflowStore.isSaving ? '保存中...' : '已保存' }}
         </span>
-        <span class="text-[10px] text-polaroid-warm-500">
+        <span class="text-[10px] text-competitor-text-2">
           节点 {{ workflowStore.currentWorkflow.nodes.length }} / 连线 {{ workflowStore.currentWorkflow.edges.length }} · 缩放 {{ zoom }}%
         </span>
         <div class="ml-auto flex items-center gap-1.5">
-          <button @click="hideHelpers = !hideHelpers" class="px-2.5 py-1 text-xs border border-polaroid-warm-300 rounded hover:bg-polaroid-warm-100">{{ hideHelpers ? '显示辅助' : '隐藏辅助' }}</button>
-          <button @click="saveCurrent" class="px-2.5 py-1 text-xs border border-polaroid-warm-300 rounded hover:bg-polaroid-warm-100">保存</button>
-          <button @click="showValidation = true" class="px-2.5 py-1 text-xs border border-polaroid-warm-300 rounded hover:bg-polaroid-warm-100">结构校验</button>
-          <button @click="showRun = !showRun" class="px-2.5 py-1 text-xs border border-polaroid-warm-300 rounded hover:bg-polaroid-warm-100">执行面板</button>
-          <button @click="runWorkflow" :disabled="isExecuting" class="px-3 py-1 text-xs bg-polaroid-warm-500 text-white rounded hover:bg-polaroid-warm-600 shadow-sm disabled:opacity-50">
+          <button @click="hideHelpers = !hideHelpers" class="px-2.5 py-1 text-xs border border-competitor-border rounded hover:bg-competitor-main">{{ hideHelpers ? '显示辅助' : '隐藏辅助' }}</button>
+          <button @click="saveCurrent" class="px-2.5 py-1 text-xs border border-competitor-border rounded hover:bg-competitor-main">保存</button>
+          <button @click="showValidation = true" class="px-2.5 py-1 text-xs border border-competitor-border rounded hover:bg-competitor-main">结构校验</button>
+          <button @click="showRun = !showRun" class="px-2.5 py-1 text-xs border border-competitor-border rounded hover:bg-competitor-main">执行面板</button>
+          <button @click="runWorkflow" :disabled="isExecuting" class="px-3 py-1 text-xs bg-competitor-primary text-white rounded hover:bg-competitor-primary-dark shadow-sm disabled:opacity-50">
             {{ isExecuting ? '执行中...' : '执行' }}
           </button>
         </div>
@@ -71,9 +71,9 @@
           @edge-click="onEdgeClick"
           @connect="onConnect"
           @node-drag-stop="onNodeDragStop"
-          class="h-full bg-polaroid-warm-50"
+          class="h-full bg-competitor-main"
         >
-          <Background pattern-color="#eadfd3" :gap="20" />
+          <Background pattern-color="#e8e8e8" :gap="20" />
           <Controls position="bottom-left" />
 
           <template #node-custom="props">
@@ -96,13 +96,13 @@
       </div>
 
       <!-- 结构校验面板 -->
-      <div v-if="showValidation" class="absolute right-4 top-14 w-72 bg-white border border-polaroid-warm-200 rounded-lg shadow-lg z-20">
-        <div class="p-3 border-b border-polaroid-warm-200 flex justify-between items-center">
+      <div v-if="showValidation" class="absolute right-4 top-14 w-72 bg-white border border-competitor-border rounded-lg shadow-lg z-20">
+        <div class="p-3 border-b border-competitor-border flex justify-between items-center">
           <span class="text-xs font-bold">结构校验（PRD §7.2）</span>
           <button @click="showValidation = false" class="text-lg leading-none opacity-50 hover:opacity-100">&times;</button>
         </div>
         <div class="p-3 text-xs space-y-2 max-h-64 overflow-y-auto">
-          <div v-if="validationIssues.length === 0" class="text-green-600">✅ 校验通过，无结构问题</div>
+          <div v-if="validationIssues.length === 0" class="text-competitor-success">✅ 校验通过，无结构问题</div>
           <div v-for="(iss, i) in validationIssues" :key="i"
                class="px-2 py-1.5 rounded border"
                :class="iss.level === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-700'">
@@ -112,15 +112,15 @@
       </div>
 
       <!-- 执行日志面板 -->
-      <div v-if="showRun" class="absolute bottom-0 left-0 right-0 h-48 bg-white border-t border-polaroid-warm-200 z-10 flex flex-col">
-        <div class="p-2 border-b border-polaroid-warm-200 flex justify-between items-center bg-polaroid-warm-50">
+      <div v-if="showRun" class="absolute bottom-0 left-0 right-0 h-48 bg-white border-t border-competitor-border z-10 flex flex-col">
+        <div class="p-2 border-b border-competitor-border flex justify-between items-center bg-competitor-main">
           <span class="text-xs font-bold">执行追踪（PRD §7.4）</span>
           <button @click="showRun = false" class="text-lg leading-none opacity-50 hover:opacity-100">&times;</button>
         </div>
         <div class="flex-1 overflow-y-auto p-3 font-mono text-[10px] space-y-1">
           <div v-for="(log, i) in executionLogs" :key="i" class="flex gap-2">
             <span class="opacity-40 shrink-0">{{ log.time }}</span>
-            <span :class="log.nodeId === 'global' ? 'font-bold text-polaroid-warm-600' : ''">
+            <span :class="log.nodeId === 'global' ? 'font-bold text-competitor-text' : ''">
               [{{ log.nodeId || 'System' }}] {{ log.msg }}
             </span>
           </div>
@@ -130,14 +130,14 @@
     </div>
 
     <!-- 右侧节点配置抽屉（10 分区，PRD §4 / §7.1） -->
-    <aside v-if="selectedNode" class="w-80 border-l border-polaroid-warm-200 bg-white flex flex-col shrink-0">
-      <div class="p-4 border-b border-polaroid-warm-200 flex justify-between items-center">
+    <aside v-if="selectedNode" class="w-80 border-l border-competitor-border bg-white flex flex-col shrink-0">
+      <div class="p-4 border-b border-competitor-border flex justify-between items-center">
         <div>
           <h2 class="font-bold text-sm">节点配置</h2>
-          <p class="text-[10px] opacity-50">{{ selectedNode.label }}</p>
+          <p class="text-[10px] text-competitor-text-2">{{ selectedNode.label }}</p>
         </div>
         <div class="flex items-center gap-2">
-          <button @click="removeSelectedNode" class="text-xs px-2 py-1 border border-red-200 text-red-500 rounded hover:bg-red-50">删除</button>
+          <button @click="removeSelectedNode" class="text-xs px-2 py-1 border border-red-200 text-competitor-danger rounded hover:bg-red-50">删除</button>
           <button @click="selectedNode = null" class="text-xl leading-none opacity-50 hover:opacity-100">&times;</button>
         </div>
       </div>
@@ -146,71 +146,67 @@
       <div class="flex-1 overflow-y-auto p-4 space-y-3">
         <div v-for="(section, si) in drawerSections" :key="si">
           <button @click="openSection = openSection === si ? -1 : si"
-            class="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold border border-polaroid-warm-200 rounded-lg bg-polaroid-warm-50 hover:bg-polaroid-warm-100 transition-colors">
+            class="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold border border-competitor-border rounded-lg bg-competitor-main hover:bg-competitor-border transition-colors">
             <span>{{ section.title }}</span>
             <span class="opacity-50">{{ openSection === si ? '−' : '+' }}</span>
           </button>
-          <div v-if="openSection === si" class="mt-2 px-3 py-2 border border-polaroid-warm-200 rounded-lg bg-white space-y-3">
+          <div v-if="openSection === si" class="mt-2 px-3 py-2 border border-competitor-border rounded-lg bg-white space-y-3">
             <!-- 基础信息 -->
             <template v-if="section.key === 'basic'">
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">节点名称</label>
-                <input type="text" v-model="selectedNode.label" @input="onConfigChange" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none focus:ring-1 focus:ring-polaroid-warm-400">
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">节点名称</label>
+                <input type="text" v-model="selectedNode.label" @input="onConfigChange" class="w-full p-2 text-sm border border-competitor-border rounded outline-none focus:ring-1 focus:ring-competitor-primary">
               </div>
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">分类</label>
-                <input :value="catName(selectedNode.data.category)" disabled class="w-full p-2 text-sm border border-polaroid-warm-200 rounded bg-polaroid-warm-50">
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">分类</label>
+                <input :value="catName(selectedNode.data.category)" disabled class="w-full p-2 text-sm border border-competitor-border rounded bg-competitor-main">
               </div>
             </template>
-            <!-- 模型 -->
+            <!-- 模型（仅 Agnes 3.0 Flash） -->
             <template v-else-if="section.key === 'model'">
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">选择模型</label>
-                <select v-model="selectedNode.config.model" @change="onConfigChange" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none">
-                  <option>Claude-Opus-4.5</option>
-                  <option>Claude-Sonnet-4.5</option>
-                  <option>Gemini-2.5-Pro</option>
-                  <option>GPT-4o</option>
-                  <option>Qwen3-Max</option>
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">选择模型</label>
+                <select v-model="selectedNode.config.model" @change="onConfigChange" class="w-full p-2 text-sm border border-competitor-border rounded outline-none">
+                  <option>Agnes 3.0 Flash</option>
                 </select>
               </div>
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">Temperature</label>
-                <input type="number" v-model.number="selectedNode.config.temperature" @input="onConfigChange" step="0.1" min="0" max="2" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none">
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">Temperature</label>
+                <input type="number" v-model.number="selectedNode.config.temperature" @input="onConfigChange" step="0.1" min="0" max="2" class="w-full p-2 text-sm border border-competitor-border rounded outline-none">
               </div>
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">Top-P</label>
-                <input type="number" v-model.number="selectedNode.config.topP" @input="onConfigChange" step="0.05" min="0" max="1" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none">
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">Top-P</label>
+                <input type="number" v-model.number="selectedNode.config.topP" @input="onConfigChange" step="0.05" min="0" max="1" class="w-full p-2 text-sm border border-competitor-border rounded outline-none">
               </div>
             </template>
             <!-- 提示词 -->
             <template v-else-if="section.key === 'prompt'">
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">System Prompt</label>
-                <textarea v-model="selectedNode.config.systemPrompt" @input="onConfigChange" rows="3" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none" placeholder="输入系统提示词..."></textarea>
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">System Prompt</label>
+                <textarea v-model="selectedNode.config.systemPrompt" @input="onConfigChange" rows="3" class="w-full p-2 text-sm border border-competitor-border rounded outline-none" placeholder="输入系统提示词..."></textarea>
               </div>
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">User Prompt</label>
-                <textarea v-model="selectedNode.config.userPrompt" @input="onConfigChange" rows="3" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none" placeholder="输入用户提示词，支持 {{变量}} 引用上游输出..."></textarea>
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">User Prompt</label>
+                <textarea v-model="selectedNode.config.userPrompt" @input="onConfigChange" rows="3" class="w-full p-2 text-sm border border-competitor-border rounded outline-none" placeholder="输入用户提示词，支持 {{变量}} 引用上游输出..."></textarea>
               </div>
             </template>
             <!-- 输入绑定 -->
             <template v-else-if="section.key === 'input'">
-              <p class="text-[11px] opacity-50">从上游节点输出选择数据。已绑定：</p>
+              <p class="text-[11px] text-competitor-text-2">从上游节点输出选择数据。已绑定：</p>
               <ul class="text-xs space-y-1">
-                <li v-for="(b, i) in (selectedNode.config.inputBindings || [])" :key="i" class="px-2 py-1 bg-polaroid-warm-50 rounded">{{ b }}</li>
+                <li v-for="(b, i) in (selectedNode.config.inputBindings || [])" :key="i" class="px-2 py-1 bg-competitor-main rounded">{{ b }}</li>
                 <li v-if="!(selectedNode.config.inputBindings || []).length" class="text-[11px] opacity-40">暂无绑定</li>
               </ul>
             </template>
             <!-- 输出 Schema -->
             <template v-else-if="section.key === 'output'">
-              <label class="block text-[11px] font-medium opacity-60 mb-1">输出 Schema（JSON）</label>
-              <textarea v-model="selectedNode.config.outputSchemaText" @input="onConfigChange" rows="4" class="w-full p-2 text-xs border border-polaroid-warm-200 rounded outline-none font-mono" placeholder='{ "result": "string", "evidence": ["string"] }'></textarea>
+              <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">输出 Schema（JSON）</label>
+              <textarea v-model="selectedNode.config.outputSchemaText" @input="onConfigChange" rows="4" class="w-full p-2 text-xs border border-competitor-border rounded outline-none font-mono" placeholder='{ "result": "string", "evidence": ["string"] }'></textarea>
               <p class="text-[10px] opacity-40">关键判定字段必须包含证据引用（evidence）</p>
             </template>
             <!-- 工具白名单 -->
             <template v-else-if="section.key === 'tools'">
-              <p class="text-[11px] opacity-50">声明可调用的工具（白名单外调用运行时拒绝）：</p>
+              <p class="text-[11px] text-competitor-text-2">声明可调用的工具（白名单外调用运行时拒绝）：</p>
               <label v-for="t in toolOptions" :key="t" class="flex items-center gap-2 text-xs py-0.5 cursor-pointer">
                 <input type="checkbox" :value="t" v-model="selectedNode.config.toolWhitelist" @change="onConfigChange" />
                 {{ t }}
@@ -218,7 +214,7 @@
             </template>
             <!-- 能力包 -->
             <template v-else-if="section.key === 'skills'">
-              <p class="text-[11px] opacity-50">可挂载零个或多个能力包（Skills）：</p>
+              <p class="text-[11px] text-competitor-text-2">可挂载零个或多个能力包（Skills）：</p>
               <label v-for="s in skillOptions" :key="s" class="flex items-center gap-2 text-xs py-0.5 cursor-pointer">
                 <input type="checkbox" :value="s" v-model="selectedNode.config.skills" @change="onConfigChange" />
                 {{ s }}
@@ -227,27 +223,27 @@
             <!-- 约束配置 -->
             <template v-else-if="section.key === 'constraints'">
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">最大执行步数</label>
-                <input type="number" v-model.number="selectedNode.config.maxSteps" @input="onConfigChange" min="1" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none">
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">最大执行步数</label>
+                <input type="number" v-model.number="selectedNode.config.maxSteps" @input="onConfigChange" min="1" class="w-full p-2 text-sm border border-competitor-border rounded outline-none">
               </div>
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">超时（秒）</label>
-                <input type="number" v-model.number="selectedNode.config.timeoutSec" @input="onConfigChange" min="1" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none">
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">超时（秒）</label>
+                <input type="number" v-model.number="selectedNode.config.timeoutSec" @input="onConfigChange" min="1" class="w-full p-2 text-sm border border-competitor-border rounded outline-none">
               </div>
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">Token 预算</label>
-                <input type="number" v-model.number="selectedNode.config.tokenBudget" @input="onConfigChange" min="0" step="100" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none">
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">Token 预算</label>
+                <input type="number" v-model.number="selectedNode.config.tokenBudget" @input="onConfigChange" min="0" step="100" class="w-full p-2 text-sm border border-competitor-border rounded outline-none">
               </div>
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">重试次数</label>
-                <input type="number" v-model.number="selectedNode.config.retry" @input="onConfigChange" min="0" max="5" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none">
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">重试次数</label>
+                <input type="number" v-model.number="selectedNode.config.retry" @input="onConfigChange" min="0" max="5" class="w-full p-2 text-sm border border-competitor-border rounded outline-none">
               </div>
             </template>
             <!-- 规则绑定 -->
             <template v-else-if="section.key === 'rules'">
-              <p class="text-[11px] opacity-50">继承平台级规则并附加节点级规则：</p>
+              <p class="text-[11px] text-competitor-text-2">继承平台级规则并附加节点级规则：</p>
               <ul class="text-xs space-y-1">
-                <li v-for="(r, i) in (selectedNode.config.rules || [])" :key="i" class="px-2 py-1 bg-polaroid-warm-50 rounded">{{ r }}</li>
+                <li v-for="(r, i) in (selectedNode.config.rules || [])" :key="i" class="px-2 py-1 bg-competitor-main rounded">{{ r }}</li>
                 <li v-if="!(selectedNode.config.rules || []).length" class="text-[11px] opacity-40">未附加节点级规则</li>
               </ul>
             </template>
@@ -258,17 +254,17 @@
                 异步模式（提交后立即返回任务标识）
               </label>
               <div>
-                <label class="block text-[11px] font-medium opacity-60 mb-1">所需资源</label>
-                <input type="text" v-model="selectedNode.config.resourcesText" @input="onConfigChange" placeholder="如：mobile_device,api_credential" class="w-full p-2 text-xs border border-polaroid-warm-200 rounded outline-none">
+                <label class="block text-[11px] font-medium text-competitor-text-2 mb-1">所需资源</label>
+                <input type="text" v-model="selectedNode.config.resourcesText" @input="onConfigChange" placeholder="如：mobile_device,api_credential" class="w-full p-2 text-xs border border-competitor-border rounded outline-none">
               </div>
             </template>
           </div>
         </div>
       </div>
 
-      <div class="p-4 border-t border-polaroid-warm-200 flex gap-2">
-        <button @click="saveCurrent" class="flex-1 py-2 bg-polaroid-warm-500 text-white text-sm rounded hover:bg-polaroid-warm-600 transition-colors">保存配置</button>
-        <button @click="debugNode" class="px-3 py-2 border border-polaroid-warm-300 rounded text-sm hover:bg-polaroid-warm-100">单节点调试</button>
+      <div class="p-4 border-t border-competitor-border flex gap-2">
+        <button @click="saveCurrent" class="flex-1 py-2 bg-competitor-primary text-white text-sm rounded hover:bg-competitor-primary-dark transition-colors">保存配置</button>
+        <button @click="debugNode" class="px-3 py-2 border border-competitor-border rounded text-sm hover:bg-competitor-main">单节点调试</button>
       </div>
     </aside>
   </div>
@@ -371,15 +367,10 @@ function onDragStart(categoryKey, label, event) {
 
 function onConnect(params) {
   onConnectImpl(params)
-  // 校验数据契约（PRD §3.2 / §7.2）
-  if (params.sourceHandle && !params.sourceHandle.endsWith('out')) {
-    // 上游 output 不匹配下游 input 时提示
-  }
   onConfigChange()
 }
 
 function onConfigChange() {
-  // 自动保存（PRD §3.2：每 5 秒自动保存草稿）
   saveCurrent()
 }
 
@@ -394,7 +385,6 @@ function onNodeClick(event) {
 }
 
 function onEdgeClick(event) {
-  // 删除连线
   workflowStore.removeEdge(event.edge.id)
 }
 
@@ -426,7 +416,6 @@ function debugNode() {
 }
 
 async function runWorkflow() {
-  // 保存 + 校验
   await saveCurrent()
   runValidation()
   try {
@@ -486,8 +475,8 @@ defineExpose({ runValidation })
 
 <style scoped>
 .custom-node {
-  background: #fef9f2;
-  border: 1px solid #e9b49a;
+  background: #fff;
+  border: 1px solid #e8e8e8;
   border-radius: 8px;
   padding: 8px;
   width: 140px;
@@ -495,9 +484,9 @@ defineExpose({ runValidation })
   transition: all 0.3s ease;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
-.custom-node-label { font-size: 12px; font-weight: 500; color: #733d31; }
-.custom-node-cat { font-size: 10px; color: #b57b65; margin-top: 2px; }
-.node-running { border-color: #ef4444 !important; box-shadow: 0 0 10px rgba(239,68,68,0.5); background: #fee2e2; }
-.node-success { border-color: #22c55e !important; background: #dcfce7; }
-.node-failed { border-color: #ef4444 !important; background: #fee2e2; }
+.custom-node-label { font-size: 12px; font-weight: 500; color: #303133; }
+.custom-node-cat { font-size: 10px; color: #909399; margin-top: 2px; }
+.node-running { border-color: #f56c6c !important; box-shadow: 0 0 10px rgba(245,108,108,0.5); background: #fef0f0; }
+.node-success { border-color: #67c23a !important; background: #f0f9eb; }
+.node-failed { border-color: #f56c6c !important; background: #fef0f0; }
 </style>

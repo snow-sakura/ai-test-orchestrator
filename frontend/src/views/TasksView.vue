@@ -1,17 +1,19 @@
 <template>
   <div class="space-y-4">
-    <!-- 页头（竞品对齐：page-header / page-title） -->
+    <!-- 页头（竞品对齐：page-header / page-title / header-actions） -->
     <div class="page-header">
       <div>
         <h1 class="page-title">异步任务看板</h1>
-        <p class="text-xs text-polaroid-warm-500 mt-0.5">
+        <p class="text-xs text-competitor-text-2 mt-0.5">
           共 {{ allTasks.length }} 项异步任务 · 支持轮询/回调、结果回写、超时与取消（PRD §6.4）
         </p>
       </div>
-      <button
-        @click="openCreate"
-        class="px-4 py-2 bg-polaroid-warm-500 text-white text-sm rounded-lg hover:bg-polaroid-warm-600 transition-colors shadow-sm"
-      >＋ 提交任务</button>
+      <div class="header-actions">
+        <button
+          @click="openCreate"
+          class="px-4 py-2 bg-competitor-primary text-white text-sm rounded-lg hover:bg-competitor-primary-dark transition-colors shadow-sm"
+        >＋ 提交任务</button>
+      </div>
     </div>
 
     <!-- 筛选栏 -->
@@ -19,21 +21,21 @@
       <input
         v-model="search"
         placeholder="搜索任务名称..."
-        class="w-56 p-2 text-sm border border-polaroid-warm-200 rounded-lg outline-none focus:ring-1 focus:ring-polaroid-warm-400 bg-white"
+        class="w-56 p-2 text-sm border border-competitor-border rounded-lg outline-none focus:ring-1 focus:ring-competitor-primary bg-white"
       />
-      <select v-model="filterType" class="px-2 py-1.5 text-sm border border-polaroid-warm-200 rounded-lg outline-none focus:ring-1 focus:ring-polaroid-warm-400 bg-white">
+      <select v-model="filterType" class="px-2 py-1.5 text-sm border border-competitor-border rounded-lg outline-none focus:ring-1 focus:ring-competitor-primary bg-white">
         <option value="">全部类型</option>
         <option v-for="t in taskTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
       </select>
-      <select v-model="filterWorkflow" class="px-2 py-1.5 text-sm border border-polaroid-warm-200 rounded-lg outline-none focus:ring-1 focus:ring-polaroid-warm-400 bg-white">
+      <select v-model="filterWorkflow" class="px-2 py-1.5 text-sm border border-competitor-border rounded-lg outline-none focus:ring-1 focus:ring-competitor-primary bg-white">
         <option value="">全部工作流</option>
         <option v-for="w in workflowOptions" :key="w" :value="w">{{ w }}</option>
       </select>
-      <select v-model="filterResource" class="px-2 py-1.5 text-sm border border-polaroid-warm-200 rounded-lg outline-none focus:ring-1 focus:ring-polaroid-warm-400 bg-white">
+      <select v-model="filterResource" class="px-2 py-1.5 text-sm border border-competitor-border rounded-lg outline-none focus:ring-1 focus:ring-competitor-primary bg-white">
         <option value="">全部资源</option>
         <option v-for="r in resourceOptions" :key="r" :value="r">{{ r }}</option>
       </select>
-      <span v-if="search || filterType || filterWorkflow || filterResource" class="text-xs text-polaroid-warm-500">
+      <span v-if="search || filterType || filterWorkflow || filterResource" class="text-xs text-competitor-text-2">
         已筛选 {{ filteredTasks.length }} 项
       </span>
     </div>
@@ -43,18 +45,18 @@
       <div
         v-for="col in boardColumns"
         :key="col.key"
-        class="polaroid-card rounded-lg p-4"
+        class="card-container"
       >
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-bold text-polaroid-warm-800 flex items-center gap-1.5">
+          <h3 class="text-sm font-bold text-competitor-text flex items-center gap-1.5">
             <span :class="col.dotClass"></span>
             {{ col.label }}
           </h3>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-polaroid-warm-100 text-polaroid-warm-600">
+          <span class="text-xs px-2 py-0.5 rounded-full bg-competitor-main text-competitor-text-2">
             {{ tasksByStatus(col.key).length }}
           </span>
         </div>
-        <div class="space-y-3">
+        <div class="space-y-3 max-h-80 overflow-y-auto pr-1">
           <div
             v-for="task in tasksByStatus(col.key)"
             :key="task.id"
@@ -63,18 +65,18 @@
           >
             <div class="flex items-start justify-between gap-2">
               <div class="min-w-0 flex-1">
-                <h4 class="text-xs font-bold text-polaroid-warm-800 truncate">{{ task.name }}</h4>
-                <div class="text-[10px] text-polaroid-warm-500 mt-0.5">
+                <h4 class="text-xs font-bold text-competitor-text truncate">{{ task.name }}</h4>
+                <div class="text-[10px] text-competitor-text-2 mt-0.5">
                   {{ task.typeLabel }} · {{ task.workflow }} · {{ task.node }}
                 </div>
               </div>
-              <span class="text-[10px] px-2 py-0.5 rounded-full shrink-0 bg-polaroid-warm-100 text-polaroid-warm-600">
+              <span class="text-[10px] px-2 py-0.5 rounded-full shrink-0 bg-competitor-main text-competitor-text-2">
                 {{ task.progress }}%
               </span>
             </div>
             <!-- 进度条 -->
             <div class="mt-2">
-              <div class="h-1.5 bg-polaroid-warm-100 rounded-full overflow-hidden">
+              <div class="h-1.5 bg-competitor-main rounded-full overflow-hidden">
                 <div
                   class="h-full rounded-full transition-all"
                   :class="progressClass(col.key)"
@@ -83,7 +85,7 @@
               </div>
             </div>
             <!-- 资源锁 / 轮询回调 -->
-            <div class="flex items-center justify-between mt-2 text-[10px] text-polaroid-warm-500">
+            <div class="flex items-center justify-between mt-2 text-[10px] text-competitor-text-2">
               <span>🔒 {{ task.resource }}</span>
               <span>{{ task.modeLabel }} · {{ task.eta }}</span>
             </div>
@@ -91,17 +93,17 @@
             <div class="flex items-center gap-1.5 mt-2">
               <button
                 @click.stop="viewTask(task)"
-                class="text-[10px] px-2 py-0.5 border border-polaroid-warm-300 rounded hover:bg-polaroid-warm-100"
+                class="text-[10px] px-2 py-0.5 border border-competitor-border rounded hover:bg-competitor-main"
               >查看</button>
               <button
                 v-if="task.status === 'running'"
                 @click.stop="cancelTask(task)"
-                class="text-[10px] px-2 py-0.5 border border-red-200 text-red-500 rounded hover:bg-red-50"
+                class="text-[10px] px-2 py-0.5 border border-red-200 text-competitor-danger rounded hover:bg-red-50"
               >取消</button>
               <button
                 v-if="task.status === 'running'"
                 @click.stop="pollTask(task)"
-                class="text-[10px] px-2 py-0.5 bg-polaroid-warm-500 text-white rounded hover:bg-polaroid-warm-600"
+                class="text-[10px] px-2 py-0.5 bg-competitor-primary text-white rounded hover:bg-competitor-primary-dark"
               >轮询推进</button>
               <button
                 v-if="task.status === 'running'"
@@ -110,7 +112,7 @@
               >模拟超时</button>
             </div>
           </div>
-          <div v-if="tasksByStatus(col.key).length === 0" class="text-xs text-polaroid-warm-400 text-center py-3">
+          <div v-if="tasksByStatus(col.key).length === 0" class="text-xs text-competitor-text-2 text-center py-3">
             暂无 {{ col.label }} 任务
           </div>
         </div>
@@ -119,81 +121,81 @@
 
     <!-- 新建任务弹窗 -->
     <div v-if="createModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div class="bg-white rounded-xl shadow-xl w-96 p-5 space-y-4">
-        <h3 class="font-bold text-polaroid-warm-800">提交异步任务</h3>
-        <label class="block text-xs font-medium opacity-60 mb-1">名称</label>
-        <input v-model="newTask.name" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none focus:ring-1 focus:ring-polaroid-warm-400" placeholder="任务名称" />
-        <label class="block text-xs font-medium opacity-60 mt-3 mb-1">类型</label>
-        <select v-model="newTask.type" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none">
+      <div class="card-container w-96 space-y-4">
+        <h3 class="font-bold text-competitor-text">提交异步任务</h3>
+        <label class="block text-xs font-medium text-competitor-text-2 mb-1">名称</label>
+        <input v-model="newTask.name" class="w-full p-2 text-sm border border-competitor-border rounded outline-none focus:ring-1 focus:ring-competitor-primary" placeholder="任务名称" />
+        <label class="block text-xs font-medium text-competitor-text-2 mt-3 mb-1">类型</label>
+        <select v-model="newTask.type" class="w-full p-2 text-sm border border-competitor-border rounded outline-none">
           <option v-for="t in taskTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
         </select>
-        <label class="block text-xs font-medium opacity-60 mt-3 mb-1">工作流 ID</label>
-        <input v-model="newTask.workflow" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none" placeholder="wf_xxx" />
-        <label class="block text-xs font-medium opacity-60 mt-3 mb-1">节点 ID</label>
-        <input v-model="newTask.node" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none" placeholder="n_xxx" />
-        <label class="block text-xs font-medium opacity-60 mt-3 mb-1">资源</label>
-        <input v-model="newTask.resource" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none" placeholder="browser-farm-X" />
+        <label class="block text-xs font-medium text-competitor-text-2 mt-3 mb-1">工作流 ID</label>
+        <input v-model="newTask.workflow" class="w-full p-2 text-sm border border-competitor-border rounded outline-none" placeholder="wf_xxx" />
+        <label class="block text-xs font-medium text-competitor-text-2 mt-3 mb-1">节点 ID</label>
+        <input v-model="newTask.node" class="w-full p-2 text-sm border border-competitor-border rounded outline-none" placeholder="n_xxx" />
+        <label class="block text-xs font-medium text-competitor-text-2 mt-3 mb-1">资源</label>
+        <input v-model="newTask.resource" class="w-full p-2 text-sm border border-competitor-border rounded outline-none" placeholder="browser-farm-X" />
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-medium opacity-60 mb-1">轮询间隔(s)</label>
-            <input v-model.number="newTask.poll_interval" type="number" min="0" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none" />
+            <label class="block text-xs font-medium text-competitor-text-2 mb-1">轮询间隔(s)</label>
+            <input v-model.number="newTask.poll_interval" type="number" min="0" class="w-full p-2 text-sm border border-competitor-border rounded outline-none" />
           </div>
           <div>
-            <label class="block text-xs font-medium opacity-60 mb-1">超时(s)</label>
-            <input v-model.number="newTask.timeout_sec" type="number" min="1" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none" />
+            <label class="block text-xs font-medium text-competitor-text-2 mb-1">超时(s)</label>
+            <input v-model.number="newTask.timeout_sec" type="number" min="1" class="w-full p-2 text-sm border border-competitor-border rounded outline-none" />
           </div>
         </div>
-        <label class="block text-xs font-medium opacity-60 mt-3 mb-1">模式</label>
-        <select v-model="newTask.mode" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none">
+        <label class="block text-xs font-medium text-competitor-text-2 mt-3 mb-1">模式</label>
+        <select v-model="newTask.mode" class="w-full p-2 text-sm border border-competitor-border rounded outline-none">
           <option value="poll">轮询</option>
           <option value="callback">回调</option>
         </select>
         <div class="flex justify-end gap-2">
-          <button @click="createModal = false" class="px-3 py-1.5 text-sm border border-polaroid-warm-300 rounded-lg hover:bg-polaroid-warm-100">取消</button>
-          <button @click="confirmCreate" class="px-4 py-1.5 text-sm bg-polaroid-warm-500 text-white rounded-lg hover:bg-polaroid-warm-600">提交</button>
+          <button @click="createModal = false" class="px-3 py-1.5 text-sm border border-competitor-border rounded-lg hover:bg-competitor-main">取消</button>
+          <button @click="confirmCreate" class="px-4 py-1.5 text-sm bg-competitor-primary text-white rounded-lg hover:bg-competitor-primary-dark">提交</button>
         </div>
       </div>
     </div>
 
     <!-- 任务详情弹窗 -->
     <div v-if="selectedTask" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div class="bg-white rounded-xl shadow-xl w-[560px] p-5">
+      <div class="card-container w-[560px]">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="font-bold text-polaroid-warm-800">任务详情 · {{ selectedTask.name }}</h3>
+          <h3 class="font-bold text-competitor-text">任务详情 · {{ selectedTask.name }}</h3>
           <button @click="selectedTask = null" class="text-xl leading-none opacity-50 hover:opacity-100">&times;</button>
         </div>
         <div class="space-y-3 text-sm">
           <div class="grid grid-cols-2 gap-2">
-            <div><span class="text-xs text-polaroid-warm-500">类型</span><div>{{ selectedTask.typeLabel }}</div></div>
-            <div><span class="text-xs text-polaroid-warm-500">状态</span><div>{{ selectedTask.statusLabel }}</div></div>
-            <div><span class="text-xs text-polaroid-warm-500">工作流</span><div>{{ selectedTask.workflow || '—' }}</div></div>
-            <div><span class="text-xs text-polaroid-warm-500">节点</span><div>{{ selectedTask.node || '—' }}</div></div>
-            <div><span class="text-xs text-polaroid-warm-500">资源锁</span><div>🔒 {{ selectedTask.resource }}</div></div>
-            <div><span class="text-xs text-polaroid-warm-500">模式</span><div>{{ selectedTask.modeLabel }}</div></div>
-            <div><span class="text-xs text-polaroid-warm-500">进度</span><div>{{ selectedTask.progress }}%</div></div>
-            <div><span class="text-xs text-polaroid-warm-500">ETA</span><div>{{ selectedTask.eta }}</div></div>
+            <div><span class="text-xs text-competitor-text-2">类型</span><div>{{ selectedTask.typeLabel }}</div></div>
+            <div><span class="text-xs text-competitor-text-2">状态</span><div>{{ selectedTask.statusLabel }}</div></div>
+            <div><span class="text-xs text-competitor-text-2">工作流</span><div>{{ selectedTask.workflow || '—' }}</div></div>
+            <div><span class="text-xs text-competitor-text-2">节点</span><div>{{ selectedTask.node || '—' }}</div></div>
+            <div><span class="text-xs text-competitor-text-2">资源锁</span><div>🔒 {{ selectedTask.resource }}</div></div>
+            <div><span class="text-xs text-competitor-text-2">模式</span><div>{{ selectedTask.modeLabel }}</div></div>
+            <div><span class="text-xs text-competitor-text-2">进度</span><div>{{ selectedTask.progress }}%</div></div>
+            <div><span class="text-xs text-competitor-text-2">ETA</span><div>{{ selectedTask.eta }}</div></div>
           </div>
           <!-- 结果回写（PRD §6.4） -->
           <div>
-            <div class="text-xs font-medium text-polaroid-warm-500 mb-1">结果回写变量池</div>
-            <div class="text-xs text-polaroid-warm-700 font-mono bg-polaroid-warm-50 border border-polaroid-warm-200 rounded p-2">
+            <div class="text-xs font-medium text-competitor-text-2 mb-1">结果回写变量池</div>
+            <div class="text-xs text-competitor-text font-mono bg-competitor-main border border-competitor-border rounded p-2">
               {{ selectedTask.result_ref }}
             </div>
           </div>
           <!-- 超时配置 -->
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <div><span class="text-polaroid-warm-500">超时阈值</span> <span class="font-mono">{{ selectedTask.timeout_sec }}s</span></div>
-            <div><span class="text-polaroid-warm-500">轮询间隔</span> <span class="font-mono">{{ selectedTask.poll_interval || '—' }}s</span></div>
+            <div><span class="text-competitor-text-2">超时阈值</span> <span class="font-mono">{{ selectedTask.timeout_sec }}s</span></div>
+            <div><span class="text-competitor-text-2">轮询间隔</span> <span class="font-mono">{{ selectedTask.poll_interval || '—' }}s</span></div>
           </div>
           <!-- 任务审计日志 -->
           <div>
-            <div class="text-xs font-medium text-polaroid-warm-500 mb-1">任务审计日志</div>
+            <div class="text-xs font-medium text-competitor-text-2 mb-1">任务审计日志</div>
             <div class="space-y-1 max-h-40 overflow-y-auto">
               <div v-for="(log, i) in (selectedTask.auditLog || [])" :key="i" class="text-xs flex gap-2">
-                <span class="text-polaroid-warm-400 shrink-0 font-mono">{{ log.ts }}</span>
-                <span class="text-polaroid-warm-700">[{{ log.action }}] {{ log.detail }}（{{ log.by }}）</span>
+                <span class="text-competitor-text-2 shrink-0 font-mono">{{ log.ts }}</span>
+                <span class="text-competitor-text">[{{ log.action }}] {{ log.detail }}（{{ log.by }}）</span>
               </div>
-              <div v-if="!selectedTask.auditLog?.length" class="text-xs text-polaroid-warm-500">暂无审计记录</div>
+              <div v-if="!selectedTask.auditLog?.length" class="text-xs text-competitor-text-2">暂无审计记录</div>
             </div>
           </div>
         </div>
@@ -201,7 +203,7 @@
     </div>
 
     <!-- Toast -->
-    <div v-if="toast" class="fixed bottom-6 right-6 z-50 px-4 py-2 bg-polaroid-warm-900 text-white text-sm rounded-lg shadow-lg">
+    <div v-if="toast" class="fixed bottom-6 right-6 z-50 px-4 py-2 bg-competitor-navy text-white text-sm rounded-lg shadow-lg">
       {{ toast }}
     </div>
   </div>
@@ -231,10 +233,10 @@ const taskTypes = [
 ]
 
 const boardColumns = [
-  { key: 'running', label: '运行中', dotClass: 'w-2 h-2 rounded-full bg-blue-500', progressClass: 'bg-blue-500' },
-  { key: 'success', label: '已完成', dotClass: 'w-2 h-2 rounded-full bg-green-500', progressClass: 'bg-green-500' },
-  { key: 'failed', label: '失败', dotClass: 'w-2 h-2 rounded-full bg-red-500', progressClass: 'bg-red-500' },
-  { key: 'timeout', label: '超时', dotClass: 'w-2 h-2 rounded-full bg-amber-500', progressClass: 'bg-amber-500' },
+  { key: 'running', label: '运行中', dotClass: 'w-2 h-2 rounded-full bg-competitor-primary', progressClass: 'bg-competitor-primary' },
+  { key: 'success', label: '已完成', dotClass: 'w-2 h-2 rounded-full bg-competitor-success', progressClass: 'bg-competitor-success' },
+  { key: 'failed', label: '失败', dotClass: 'w-2 h-2 rounded-full bg-competitor-danger', progressClass: 'bg-competitor-danger' },
+  { key: 'timeout', label: '超时', dotClass: 'w-2 h-2 rounded-full bg-competitor-warning', progressClass: 'bg-competitor-warning' },
 ]
 
 const allTasks = computed(() => tasks.value)
@@ -273,7 +275,7 @@ function showToast(msg) {
 }
 
 function progressClass(status) {
-  return { running: 'bg-blue-500', success: 'bg-green-500', failed: 'bg-red-500', timeout: 'bg-amber-500' }[status] || 'bg-polaroid-warm-500'
+  return { running: 'bg-competitor-primary', success: 'bg-competitor-success', failed: 'bg-competitor-danger', timeout: 'bg-competitor-warning' }[status] || 'bg-competitor-primary'
 }
 
 async function refresh() {

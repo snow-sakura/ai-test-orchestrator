@@ -369,7 +369,7 @@ def seed_runs():
             {
                 "seq": 1, "nodeId": "n1", "label": "开始", "status": "success",
                 "started": "16:42:01", "duration": "0.8s", "tokens": 806, "cost": 0.004,
-                "model": "Claude-Opus-4.5",
+                "model": "Agnes 3.0 Flash",
                 "input": {"source": "manual", "payload": {"caseId": "TC-2026-1026"}},
                 "reasoning": "工作流入口节点，初始化执行上下文并装载触发参数。",
                 "tools": [],
@@ -379,7 +379,7 @@ def seed_runs():
             {
                 "seq": 2, "nodeId": "n2", "label": "需求解析", "status": "success",
                 "started": "16:42:02", "duration": "1.2s", "tokens": 806, "cost": 0.0041,
-                "model": "Gemini-2.5-Pro",
+                "model": "Agnes 3.0 Flash",
                 "input": {"binding": "$.n1.context", "payload": {"requirement": "移动端多端回归需求"}},
                 "reasoning": "抽取 3 个可测需求点，1 个隐含边界条件（弱网超时重试）。",
                 "tools": ["webFetch"],
@@ -388,9 +388,9 @@ def seed_runs():
             },
         ],
         "logs": [
-            {"nodeId": "n1", "msg": "节点「开始」开始执行（模型 Claude-Opus-4.5）", "time": "16:42:01"},
+            {"nodeId": "n1", "msg": "节点「开始」开始执行（模型 Agnes 3.0 Flash）", "time": "16:42:01"},
             {"nodeId": "n1", "msg": "节点「开始」执行成功 · Token 806 · 成本 ¥0.0040", "time": "16:42:02"},
-            {"nodeId": "n2", "msg": "节点「需求解析」开始执行（模型 Gemini-2.5-Pro）", "time": "16:42:02"},
+            {"nodeId": "n2", "msg": "节点「需求解析」开始执行（模型 Agnes 3.0 Flash）", "time": "16:42:02"},
             {"nodeId": "n2", "msg": "工具调用: webFetch", "time": "16:42:03"},
             {"nodeId": "n2", "msg": "节点「需求解析」执行成功 · Token 806 · 成本 ¥0.0041", "time": "16:42:03"},
             {"nodeId": "global", "msg": "工作流执行完毕 · 总 Token 1612 · 总成本 ¥0.0081", "time": "16:42:04"},
@@ -1087,12 +1087,6 @@ async def timeout_task(task_id: str, payload: TaskStatusPayload):
 MODELS_FILE = os.path.join(os.path.dirname(__file__), "models.json")
 
 MODEL_REGISTRY = [
-    {"id": "claude_opus_4_5", "name": "Claude-Opus-4.5", "vendor": "Anthropic", "kind": "文本", "tier": "高", "context": "200K", "dailyLimit": 500, "pricePerMIn": 15.0, "pricePerMOut": 75.0, "desc": "旗舰推理模型，适合复杂归因与用例生成"},
-    {"id": "claude_sonnet_4_5", "name": "Claude-Sonnet-4.5", "vendor": "Anthropic", "kind": "文本", "tier": "中", "context": "200K", "dailyLimit": 2000, "pricePerMIn": 3.0, "pricePerMOut": 15.0, "desc": "均衡性能与成本，适合大部分节点执行"},
-    {"id": "gemini_2_5_pro", "name": "Gemini-2.5-Pro", "vendor": "Google", "kind": "文本", "tier": "高", "context": "1M", "dailyLimit": 1000, "pricePerMIn": 1.25, "pricePerMOut": 10.0, "desc": "超长上下文，适合大规模日志分析"},
-    {"id": "gpt_4o", "name": "GPT-4o", "vendor": "OpenAI", "kind": "多模态", "tier": "中", "context": "128K", "dailyLimit": 2000, "pricePerMIn": 2.5, "pricePerMOut": 10.0, "desc": "多模态理解，适合 UI 截图分析"},
-    {"id": "qwen3_max", "name": "Qwen3-Max", "vendor": "Alibaba", "kind": "文本", "tier": "中", "context": "256K", "dailyLimit": 3000, "pricePerMIn": 1.5, "pricePerMOut": 4.5, "desc": "中文理解与代码生成强项"},
-    {"id": "claude_opus_4_5_vision", "name": "Claude-Opus-4.5-Vision", "vendor": "Anthropic", "kind": "视觉", "tier": "高", "context": "200K", "dailyLimit": 200, "pricePerMIn": 15.0, "pricePerMOut": 75.0, "desc": "视觉理解，适合缺陷截图识别"},
     {"id": "agnes_3_0_flash", "name": "Agnes 3.0 Flash", "vendor": "Agnes", "kind": "文本", "tier": "高", "context": "128K", "dailyLimit": 2000, "pricePerMIn": 0.01, "pricePerMOut": 0.04, "desc": "Agnes 高速推理模型，基于 OpenAI 兼容协议（https://apihub.agnes-ai.com/v1），上下文 128K，temperature 0.2，maxTokens 128000。当前编码工具 qwen-code 默认模型。"},
 ]
 
@@ -1115,29 +1109,26 @@ def seed_models():
     if store:
         return
     store["registry"] = MODEL_REGISTRY
-    # 三层配置（PRD §6.5：全站级 / 个人级 / 角色级）
+    # 三层配置（PRD §6.5：全站级 / 个人级 / 角色级）— 仅 Agnes 3.0 Flash
     store["configs"] = {
-        "global": {"level": "全站", "owner": "", "textModel": "agnes_3_0_flash", "visionModel": "claude_opus_4_5_vision", "params": {"temperature": 0.2, "maxTokens": 128000}, "keyMasked": "sk-E5A4••••••••2zabgJriV", "connected": True, "keyMaskedSource": "管理员", "baseUrl": "https://apihub.agnes-ai.com/v1", "envKey": "CHERRY_QWEN_API_KEY"},
-        "personal_test_lead": {"level": "个人", "owner": "测试负责人", "textModel": "qwen3_max", "visionModel": "gpt_4o", "params": {"temperature": 0.3, "maxTokens": 8192}, "keyMasked": "sk-alb-••••••••9c2d", "connected": True, "keyMaskedSource": "个人自带凭据"},
-        "role_case_generator": {"level": "角色", "owner": "用例生成节点", "textModel": "gemini_2_5_pro", "visionModel": "", "params": {"temperature": 0.4, "maxTokens": 16384}, "keyMasked": "sk-goo-••••••••4e1b", "connected": False, "keyMaskedSource": "角色独立凭据"},
+        "global": {"level": "全站", "owner": "", "textModel": "agnes_3_0_flash", "visionModel": "", "params": {"temperature": 0.2, "maxTokens": 128000}, "keyMasked": "sk-E5A4••••••••2zabgJriV", "connected": True, "keyMaskedSource": "管理员", "baseUrl": "https://apihub.agnes-ai.com/v1", "envKey": "CHERRY_QWEN_API_KEY"},
+        "personal_test_lead": {"level": "个人", "owner": "测试负责人", "textModel": "agnes_3_0_flash", "visionModel": "", "params": {"temperature": 0.2, "maxTokens": 128000}, "keyMasked": "sk-E5A4••••••••2zabgJriV", "connected": True, "keyMaskedSource": "个人自带凭据", "baseUrl": "https://apihub.agnes-ai.com/v1", "envKey": "CHERRY_QWEN_API_KEY"},
+        "role_case_generator": {"level": "角色", "owner": "用例生成节点", "textModel": "agnes_3_0_flash", "visionModel": "", "params": {"temperature": 0.4, "maxTokens": 128000}, "keyMasked": "sk-E5A4••••••••2zabgJriV", "connected": False, "keyMaskedSource": "角色独立凭据", "baseUrl": "https://apihub.agnes-ai.com/v1", "envKey": "CHERRY_QWEN_API_KEY"},
     }
     # 额度授予记录（PRD §6.5：按自然日叠加额外使用次数，可叠加、可撤销，按账号查询）
     store["grants"] = [
-        {"id": "grant_001", "account": "测试负责人", "model": "claude_sonnet_4_5", "date": "2026-10-26", "extraQuota": 500, "revoked": False, "by": "管理员", "ts": "2026-10-26 08:00"},
-        {"id": "grant_002", "account": "测试负责人", "model": "claude_sonnet_4_5", "date": "2026-10-25", "extraQuota": 300, "revoked": False, "by": "管理员", "ts": "2026-10-25 08:00"},
-        {"id": "grant_003", "account": "测试负责人", "model": "gemini_2_5_pro", "date": "2026-10-24", "extraQuota": 200, "revoked": True, "by": "管理员", "ts": "2026-10-24 08:00"},
+        {"id": "grant_001", "account": "测试负责人", "model": "agnes_3_0_flash", "date": "2026-10-26", "extraQuota": 500, "revoked": False, "by": "管理员", "ts": "2026-10-26 08:00"},
+        {"id": "grant_002", "account": "测试负责人", "model": "agnes_3_0_flash", "date": "2026-10-25", "extraQuota": 300, "revoked": False, "by": "管理员", "ts": "2026-10-25 08:00"},
     ]
     # 额度状态（当日已用 / 可用）
     store["quotas"] = [
-        {"account": "测试负责人", "model": "claude_sonnet_4_5", "dailyLimit": 2000, "usedToday": 1240, "extraToday": 800, "renewed": False},
-        {"account": "测试负责人", "model": "gemini_2_5_pro", "dailyLimit": 1000, "usedToday": 1000, "extraToday": 0, "renewed": True},
-        {"account": "测试负责人", "model": "qwen3_max", "dailyLimit": 3000, "usedToday": 460, "extraToday": 0, "renewed": False},
+        {"account": "测试负责人", "model": "agnes_3_0_flash", "dailyLimit": 2000, "usedToday": 360, "extraToday": 800, "renewed": False},
     ]
     # 用量记录（PRD §6.5 计量与成本：节点与运行 Token 消耗）
     store["usage"] = [
-        {"id": "u1", "model": "claude_sonnet_4_5", "workflow": "我的第一个测试工作流", "node": "需求解析", "tokens": 806, "cost": 0.0041, "ts": "2026-10-26 14:02"},
-        {"id": "u2", "model": "claude_opus_4_5", "workflow": "我的第一个测试工作流", "node": "质量门禁", "tokens": 1220, "cost": 0.0915, "ts": "2026-10-26 14:03"},
-        {"id": "u3", "model": "gemini_2_5_pro", "workflow": "代码变更驱动的 CI/CD 质量门禁", "node": "变更影响分析", "tokens": 3480, "cost": 0.0592, "ts": "2026-10-26 09:01"},
+        {"id": "u1", "model": "agnes_3_0_flash", "workflow": "我的第一个测试工作流", "node": "需求解析", "tokens": 806, "cost": 0.0041, "ts": "2026-10-26 14:02"},
+        {"id": "u2", "model": "agnes_3_0_flash", "workflow": "我的第一个测试工作流", "node": "质量门禁", "tokens": 1220, "cost": 0.0490, "ts": "2026-10-26 14:03"},
+        {"id": "u3", "model": "agnes_3_0_flash", "workflow": "代码变更驱动的 CI/CD 质量门禁", "node": "变更影响分析", "tokens": 3480, "cost": 0.1472, "ts": "2026-10-26 09:01"},
     ]
     save_models(store)
 
@@ -1443,13 +1434,13 @@ def seed_audit():
         return
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     seeds = [
-        {"id": "ev_001", "ts": "2026-10-26 09:01", "type": "工具调用", "workflow": "代码变更驱动的 CI/CD 质量门禁", "node": "变更影响分析", "actor": "gemini_2_5_pro", "detail": "调用 webFetch 获取 Git diff 摘要", "refId": "trace:run_seed_002:n2"},
+        {"id": "ev_001", "ts": "2026-10-26 09:01", "type": "工具调用", "workflow": "代码变更驱动的 CI/CD 质量门禁", "node": "变更影响分析", "actor": "agnes_3_0_flash", "detail": "调用 webFetch 获取 Git diff 摘要", "refId": "trace:run_seed_002:n2"},
         {"id": "ev_002", "ts": "2026-10-26 09:02", "type": "白名单拒绝", "workflow": "代码变更驱动的 CI/CD 质量门禁", "node": "变更影响分析", "actor": "平台规则引擎", "detail": "拒绝调用 shell_exec（不在白名单内）", "refId": "whitelist:run_seed_002:n2"},
         {"id": "ev_003", "ts": "2026-10-26 09:03", "type": "质量门禁裁决", "workflow": "代码变更驱动的 CI/CD 质量门禁", "node": "质量门禁", "actor": "确定性规则引擎", "detail": "裁决：通过（执行通过率 96%，覆盖率 82%）", "refId": "gate:run_seed_002:n5"},
         {"id": "ev_004", "ts": "2026-10-25 21:35", "type": "缺陷归档", "workflow": "移动端多端回归", "node": "失败分诊", "actor": "失败分诊节点", "detail": "归档缺陷 DEF-2026-0921（登录崩溃），关联证据 ev_004", "refId": "defect:DEF-2026-0921"},
         {"id": "ev_005", "ts": "2026-10-25 21:36", "type": "人工审批", "workflow": "移动端多端回归", "node": "人工审批门", "actor": "测试负责人", "detail": "批准高风险缺陷升级处理", "refId": "approval:DEF-2026-0921"},
         {"id": "ev_006", "ts": "2026-10-24 15:20", "type": "升级处理", "workflow": "Web 端深度探索", "node": "探索任务节点", "actor": "平台", "detail": "任务超时，升级转人工处理", "refId": "escalation:task_timeout_001"},
-        {"id": "ev_007", "ts": "2026-10-26 14:03", "type": "工具调用", "workflow": "我的第一个测试工作流", "node": "需求解析", "actor": "claude_sonnet_4_5", "detail": "调用 webFetch 获取需求文档", "refId": "trace:run_seed_001:n2"},
+        {"id": "ev_007", "ts": "2026-10-26 14:03", "type": "工具调用", "workflow": "我的第一个测试工作流", "node": "需求解析", "actor": "agnes_3_0_flash", "detail": "调用 webFetch 获取需求文档", "refId": "trace:run_seed_001:n2"},
     ]
     items = _with_audit_chain(seeds)
     save_audit(items)
@@ -2018,10 +2009,10 @@ def seed_settings():
         "模型": {
             "id": "sec_model", "label": "模型配置", "enabled": True,
             "items": [
-                {"key": "默认文本模型", "value": "Claude-Sonnet-4.5", "type": "select", "options": ["Claude-Sonnet-4.5", "Qwen3-Max", "GPT-4o", "Gemini-2.5-Pro"], "desc": "规划 / 执行 / 验证节点默认文本模型"},
-                {"key": "默认视觉模型", "value": "Claude-Opus-4.5-Vision", "type": "select", "options": ["Claude-Opus-4.5-Vision", "Gemini-2.5-Pro", "GPT-4o"], "desc": "视觉 / 语义回归节点默认视觉模型"},
+                {"key": "默认文本模型", "value": "Agnes 3.0 Flash", "type": "select", "options": ["Agnes 3.0 Flash"], "desc": "规划 / 执行 / 验证节点默认文本模型（OpenAI 兼容协议，128K 上下文）"},
                 {"key": "推理温度", "value": "0.2", "type": "number", "options": [], "desc": "测试场景低温度保证可重复"},
                 {"key": "Top-P", "value": "0.9", "type": "number", "options": [], "desc": "核采样阈值"},
+                {"key": "最大 Token 数", "value": "128000", "type": "number", "options": [], "desc": "单次请求最大生成 Token 数"},
             ],
         },
         "通知": {
@@ -2166,7 +2157,7 @@ async def run_execution_engine(exec_id: str, workflow: Dict[str, Any]):
 
         state["node_states"][current_node_id] = "running"
         state["logs"].append({
-            "nodeId": current_node_id, "msg": f"节点「{node_label}」开始执行（模型 {cfg.get('model', 'Claude-Opus-4.5')}）", "time": "now",
+            "nodeId": current_node_id, "msg": f"节点「{node_label}」开始执行（模型 {cfg.get('model', 'Agnes 3.0 Flash')}）", "time": "now",
         })
 
         await asyncio.sleep(1.0)
@@ -2206,7 +2197,7 @@ async def run_execution_engine(exec_id: str, workflow: Dict[str, Any]):
             "duration": "1.0s",
             "tokens": tokens,
             "cost": cost,
-            "model": cfg.get("model", "Claude-Opus-4.5"),
+            "model": cfg.get("model", "Agnes 3.0 Flash"),
             "input": {
                 "binding": f"$.{current_node_id}.input" if seq > 1 else "trigger.payload",
                 "payload": cfg.get("inputBindings") or {"workflow": workflow.get("id", workflow.get("name"))},

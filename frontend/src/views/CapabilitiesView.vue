@@ -1,17 +1,19 @@
 <template>
   <div class="space-y-4">
-    <!-- 页头（竞品对齐：page-header / page-title） -->
+    <!-- 页头（竞品对齐：page-header / page-title / header-actions） -->
     <div class="page-header">
       <div>
         <h1 class="page-title">开放能力控制台</h1>
-        <p class="text-xs text-polaroid-warm-500 mt-0.5">
+        <p class="text-xs text-competitor-text-2 mt-0.5">
           {{ filteredCaps.length }} 项可调用能力 · 鉴权授权 · 危险操作审批 · 调用日志（PRD §6.1）
         </p>
       </div>
-      <button
-        @click="openCreate"
-        class="px-4 py-2 bg-polaroid-warm-500 text-white text-sm rounded-lg hover:bg-polaroid-warm-600 transition-colors shadow-sm"
-      >＋ 登记能力</button>
+      <div class="header-actions">
+        <button
+          @click="openCreate"
+          class="px-4 py-2 bg-competitor-primary text-white text-sm rounded-lg hover:bg-competitor-primary-dark transition-colors shadow-sm"
+        >＋ 登记能力</button>
+      </div>
     </div>
 
     <!-- Tab 切换 -->
@@ -20,24 +22,24 @@
         v-for="tab in tabs" :key="tab.key"
         @click="activeTab = tab.key"
         class="px-3 py-1.5 text-sm rounded-lg transition-colors"
-        :class="activeTab === tab.key ? 'bg-polaroid-warm-500 text-white' : 'bg-white border border-polaroid-warm-200 text-polaroid-warm-600 hover:bg-polaroid-warm-50'"
+        :class="activeTab === tab.key ? 'bg-competitor-primary text-white' : 'bg-white border border-competitor-border text-competitor-text hover:bg-competitor-main'"
       >{{ tab.label }}</button>
     </div>
 
     <!-- ① 能力暴露清单 -->
     <div v-if="activeTab === 'list'">
       <!-- 筛选栏 -->
-      <div class="flex items-center gap-2 flex-wrap mb-3">
+      <div class="filter-bar">
         <select
           v-model="filterKind"
-          class="px-2 py-1.5 text-sm border border-polaroid-warm-200 rounded-lg outline-none focus:ring-1 focus:ring-polaroid-warm-400 bg-white"
+          class="px-2 py-1.5 text-sm border border-competitor-border rounded-lg outline-none focus:ring-1 focus:ring-competitor-primary bg-white"
         >
           <option value="">全部类型</option>
           <option v-for="k in capKinds" :key="k" :value="k">{{ k }}</option>
         </select>
         <select
           v-model="filterStatus"
-          class="px-2 py-1.5 text-sm border border-polaroid-warm-200 rounded-lg outline-none focus:ring-1 focus:ring-polaroid-warm-400 bg-white"
+          class="px-2 py-1.5 text-sm border border-competitor-border rounded-lg outline-none focus:ring-1 focus:ring-competitor-primary bg-white"
         >
           <option value="">全部状态</option>
           <option v-for="s in capStatuses" :key="s.value" :value="s.value">{{ s.label }}</option>
@@ -52,33 +54,33 @@
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2 flex-wrap">
-                <h3 class="font-bold text-polaroid-warm-800 text-sm truncate">{{ cap.name }}</h3>
+                <h3 class="font-bold text-competitor-text text-sm truncate">{{ cap.name }}</h3>
                 <span class="text-[10px] px-2 py-0.5 rounded-full shrink-0" :class="kindClass(cap.kind)">{{ cap.kind }}</span>
                 <span class="text-[10px] px-2 py-0.5 rounded-full shrink-0" :class="statusClass(cap.status)">{{ cap.statusLabel }}</span>
               </div>
-              <div class="text-[11px] text-polaroid-warm-500 mt-1">
+              <div class="text-[11px] text-competitor-text-2 mt-1">
                 来源：{{ cap.source }} · 协议：{{ cap.protocol }} · 鉴权：{{ cap.auth }}
               </div>
               <!-- 危险操作标记（PRD §6.1 危险操作审批） -->
               <div v-if="(cap.dangerousOps || []).length" class="flex flex-wrap gap-1 mt-1.5">
                 <span
                   v-for="op in cap.dangerousOps" :key="op"
-                  class="text-[10px] px-1.5 py-0.5 rounded bg-red-50 border border-red-200 text-red-600"
+                  class="text-[10px] px-1.5 py-0.5 rounded bg-red-50 border border-red-200 text-competitor-danger"
                 >⚠ {{ op }}</span>
               </div>
-              <p class="text-[11px] text-polaroid-warm-500 mt-2">{{ cap.desc }}</p>
-              <div class="flex flex-wrap gap-3 mt-2 text-[10px] text-polaroid-warm-500">
+              <p class="text-[11px] text-competitor-text-2 mt-2">{{ cap.desc }}</p>
+              <div class="flex flex-wrap gap-3 mt-2 text-[10px] text-competitor-text-2">
                 <span>30天调用 {{ cap.callCount30d }}</span>
                 <span v-if="cap.lastCalled">最近调用 {{ cap.lastCalled }}</span>
               </div>
             </div>
             <div class="text-right shrink-0">
-              <div class="text-[10px] text-polaroid-warm-500 mb-0.5">能力 ID</div>
-              <code class="text-[10px] font-mono bg-polaroid-warm-50 border border-polaroid-warm-200 rounded px-1.5 py-0.5 text-polaroid-warm-700">{{ cap.id }}</code>
+              <div class="text-[10px] text-competitor-text-2 mb-0.5">能力 ID</div>
+              <code class="text-[10px] font-mono bg-competitor-main border border-competitor-border rounded px-1.5 py-0.5 text-competitor-text">{{ cap.id }}</code>
             </div>
           </div>
         </div>
-        <div v-if="filteredCaps.length === 0" class="col-span-full polaroid-card rounded-lg p-10 text-center text-polaroid-warm-500 text-sm">
+        <div v-if="filteredCaps.length === 0" class="col-span-full card-container p-10 text-center text-competitor-text-2 text-sm">
           暂无匹配的能力
         </div>
       </div>
@@ -86,10 +88,10 @@
 
     <!-- ② 调用日志 -->
     <div v-if="activeTab === 'callLogs'">
-      <div class="flex items-center gap-2 flex-wrap mb-3">
+      <div class="filter-bar">
         <select
           v-model="filterLogResult"
-          class="px-2 py-1.5 text-sm border border-polaroid-warm-200 rounded-lg outline-none focus:ring-1 focus:ring-polaroid-warm-400 bg-white"
+          class="px-2 py-1.5 text-sm border border-competitor-border rounded-lg outline-none focus:ring-1 focus:ring-competitor-primary bg-white"
         >
           <option value="">全部结果</option>
           <option value="success">成功</option>
@@ -97,12 +99,12 @@
           <option value="failed">失败</option>
         </select>
       </div>
-      <div class="polaroid-card rounded-lg p-4">
-        <h4 class="text-sm font-bold text-polaroid-warm-800 mb-2">外部调用日志（与内部运行共享同一审计账本）</h4>
+      <div class="card-container">
+        <h4 class="text-sm font-bold text-competitor-text mb-2">外部调用日志（与内部运行共享同一审计账本）</h4>
         <div class="overflow-x-auto">
           <table class="w-full text-xs">
             <thead>
-              <tr class="text-left text-polaroid-warm-500 border-b border-polaroid-warm-200">
+              <tr class="text-left text-competitor-text-2 border-b border-competitor-border">
                 <th class="py-2 pr-3">时间</th>
                 <th class="py-2 pr-3">能力</th>
                 <th class="py-2 pr-3">调用方</th>
@@ -112,17 +114,17 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="l in filteredCallLogs" :key="l.id" class="border-b border-polaroid-warm-100">
-                <td class="py-2 pr-3 text-polaroid-warm-500 font-mono">{{ l.ts }}</td>
-                <td class="py-2 pr-3 text-polaroid-warm-700">{{ l.capability }}</td>
-                <td class="py-2 pr-3 text-polaroid-warm-600">{{ l.caller }}</td>
+              <tr v-for="l in filteredCallLogs" :key="l.id" class="border-b border-competitor-border/60">
+                <td class="py-2 pr-3 text-competitor-text-2 font-mono">{{ l.ts }}</td>
+                <td class="py-2 pr-3 text-competitor-text">{{ l.capability }}</td>
+                <td class="py-2 pr-3 text-competitor-text-2">{{ l.caller }}</td>
                 <td class="py-2 pr-3">
                   <span :class="resultClass(l.result)">{{ resultLabel(l.result) }}</span>
                 </td>
-                <td class="py-2 pr-3 text-polaroid-warm-600 font-mono">{{ l.duration }}</td>
-                <td class="py-2 pr-3 font-mono text-polaroid-warm-500">{{ l.auditRef }}</td>
+                <td class="py-2 pr-3 text-competitor-text-2 font-mono">{{ l.duration }}</td>
+                <td class="py-2 pr-3 font-mono text-competitor-text-2">{{ l.auditRef }}</td>
               </tr>
-              <tr v-if="filteredCallLogs.length === 0"><td colspan="6" class="py-4 text-center text-polaroid-warm-500">暂无调用日志</td></tr>
+              <tr v-if="filteredCallLogs.length === 0"><td colspan="6" class="py-4 text-center text-competitor-text-2">暂无调用日志</td></tr>
             </tbody>
           </table>
         </div>
@@ -139,22 +141,22 @@
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2 flex-wrap">
-                <h4 class="text-xs font-bold text-polaroid-warm-800">{{ a.capability }}</h4>
-                <span class="text-[10px] px-1.5 py-0.5 rounded bg-polaroid-warm-50 border border-polaroid-warm-200 text-polaroid-warm-600">操作：{{ a.op }}</span>
+                <h4 class="text-xs font-bold text-competitor-text">{{ a.capability }}</h4>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-competitor-main border border-competitor-border text-competitor-text-2">操作：{{ a.op }}</span>
                 <span :class="a.status === '已放行' ? 'text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700' : 'text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700'">{{ a.status }}</span>
               </div>
-              <div class="text-[11px] text-polaroid-warm-500 mt-1">
+              <div class="text-[11px] text-competitor-text-2 mt-1">
                 {{ a.ts }} · 审批方：{{ a.by || '—' }}
               </div>
             </div>
             <button
               v-if="a.status === '待审批'"
               @click="approve(a)"
-              class="text-xs px-2 py-1 bg-polaroid-warm-500 text-white rounded hover:bg-polaroid-warm-600 shrink-0"
+              class="text-xs px-2 py-1 bg-competitor-primary text-white rounded hover:bg-competitor-primary-dark shrink-0"
             >放行</button>
           </div>
         </div>
-        <div v-if="approvals.length === 0" class="polaroid-card rounded-lg p-8 text-center text-polaroid-warm-500 text-sm">暂无审批记录</div>
+        <div v-if="approvals.length === 0" class="card-container p-8 text-center text-competitor-text-2 text-sm">暂无审批记录</div>
       </div>
     </div>
 
@@ -168,44 +170,44 @@
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2 flex-wrap">
-                <h4 class="text-xs font-bold text-polaroid-warm-800">{{ c.caller }}</h4>
-                <span class="text-[10px] px-1.5 py-0.5 rounded bg-polaroid-warm-50 border border-polaroid-warm-200 text-polaroid-warm-600">{{ c.role }}</span>
+                <h4 class="text-xs font-bold text-competitor-text">{{ c.caller }}</h4>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-competitor-main border border-competitor-border text-competitor-text-2">{{ c.role }}</span>
                 <span class="text-[10px] px-2 py-0.5 rounded-full" :class="c.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'">{{ c.status === 'active' ? '已接入' : '已停用' }}</span>
               </div>
-              <div class="text-[11px] text-polaroid-warm-500 mt-1">
+              <div class="text-[11px] text-competitor-text-2 mt-1">
                 密钥：<code class="font-mono">{{ c.keyMasked }}</code> · 创建于 {{ c.created }}
               </div>
               <div class="flex flex-wrap gap-1 mt-1.5">
-                <span v-for="s in c.scopes" :key="s" class="text-[10px] px-1.5 py-0.5 rounded bg-polaroid-warm-50 border border-polaroid-warm-200 text-polaroid-warm-600">{{ s }}</span>
+                <span v-for="s in c.scopes" :key="s" class="text-[10px] px-1.5 py-0.5 rounded bg-competitor-main border border-competitor-border text-competitor-text-2">{{ s }}</span>
               </div>
             </div>
           </div>
         </div>
-        <div v-if="connects.length === 0" class="polaroid-card rounded-lg p-8 text-center text-polaroid-warm-500 text-sm">暂无接入配置</div>
+        <div v-if="connects.length === 0" class="card-container p-8 text-center text-competitor-text-2 text-sm">暂无接入配置</div>
       </div>
     </div>
 
     <!-- 登记能力弹窗 -->
     <div v-if="createModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div class="bg-white rounded-xl shadow-xl w-96 p-5 space-y-4">
-        <h3 class="font-bold text-polaroid-warm-800">登记对外能力</h3>
-        <label class="block text-xs font-medium opacity-60 mb-1">能力名称</label>
-        <input v-model="newCap.name" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none" placeholder="能力名称" />
-        <label class="block text-xs font-medium opacity-60 mt-3 mb-1">类型</label>
-        <select v-model="newCap.kind" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none">
+      <div class="card-container w-96 space-y-4">
+        <h3 class="font-bold text-competitor-text">登记对外能力</h3>
+        <label class="block text-xs font-medium text-competitor-text-2 mb-1">能力名称</label>
+        <input v-model="newCap.name" class="w-full p-2 text-sm border border-competitor-border rounded outline-none" placeholder="能力名称" />
+        <label class="block text-xs font-medium text-competitor-text-2 mt-3 mb-1">类型</label>
+        <select v-model="newCap.kind" class="w-full p-2 text-sm border border-competitor-border rounded outline-none">
           <option v-for="k in capKinds" :key="k" :value="k">{{ k }}</option>
         </select>
-        <label class="block text-xs font-medium opacity-60 mt-3 mb-1">来源（工作流 / 节点 ID）</label>
-        <input v-model="newCap.source" class="w-full p-2 text-sm border border-polaroid-warm-200 rounded outline-none font-mono" placeholder="wf_xxx / n_xxx" />
+        <label class="block text-xs font-medium text-competitor-text-2 mt-3 mb-1">来源（工作流 / 节点 ID）</label>
+        <input v-model="newCap.source" class="w-full p-2 text-sm border border-competitor-border rounded outline-none font-mono" placeholder="wf_xxx / n_xxx" />
         <div class="flex justify-end gap-2">
-          <button @click="createModal = false" class="px-3 py-1.5 text-sm border border-polaroid-warm-300 rounded-lg hover:bg-polaroid-warm-100">取消</button>
-          <button @click="confirmCreate" class="px-4 py-1.5 text-sm bg-polaroid-warm-500 text-white rounded-lg hover:bg-polaroid-warm-600">登记</button>
+          <button @click="createModal = false" class="px-3 py-1.5 text-sm border border-competitor-border rounded-lg hover:bg-competitor-main">取消</button>
+          <button @click="confirmCreate" class="px-4 py-1.5 text-sm bg-competitor-primary text-white rounded-lg hover:bg-competitor-primary-dark">登记</button>
         </div>
       </div>
     </div>
 
     <!-- Toast -->
-    <div v-if="toast" class="fixed bottom-6 right-6 z-50 px-4 py-2 bg-polaroid-warm-900 text-white text-sm rounded-lg shadow-lg">
+    <div v-if="toast" class="fixed bottom-6 right-6 z-50 px-4 py-2 bg-competitor-navy text-white text-sm rounded-lg shadow-lg">
       {{ toast }}
     </div>
   </div>
@@ -264,7 +266,7 @@ function statusClass(status) {
 }
 
 function resultClass(result) {
-  return { success: 'text-green-600', pending_approval: 'text-amber-600', failed: 'text-red-500' }[result] || 'text-polaroid-warm-600'
+  return { success: 'text-competitor-success', pending_approval: 'text-competitor-warning', failed: 'text-competitor-danger' }[result] || 'text-competitor-text'
 }
 
 function resultLabel(result) {

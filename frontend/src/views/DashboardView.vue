@@ -1,47 +1,47 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-5">
     <!-- 页头（竞品对齐：page-header / page-title） -->
     <div class="page-header">
       <div>
         <h1 class="page-title">工作台总览</h1>
-        <p class="text-xs text-polaroid-warm-500 mt-0.5">
+        <p class="text-xs text-competitor-text-2 mt-0.5">
           {{ pendingCount }} 项待办审批 · {{ runningCount }} 个运行进行中
         </p>
       </div>
-      <button @click="goTo('/workflows')" class="px-4 py-2 bg-polaroid-warm-500 text-white text-sm rounded-lg hover:bg-polaroid-warm-600 shadow-sm transition-colors">＋ 新建工作流</button>
+      <button @click="goTo('/workflows')" class="px-4 py-2 bg-competitor-primary text-white text-sm rounded-lg hover:bg-competitor-primary-dark shadow-sm transition-colors">＋ 新建工作流</button>
     </div>
 
     <!-- KPI 卡片 -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <div v-for="kpi in kpis" :key="kpi.label" class="polaroid-card rounded-lg p-4">
         <div class="flex items-center justify-between">
-          <span class="text-xs opacity-60">{{ kpi.label }}</span>
+          <span class="text-xs text-competitor-text-2">{{ kpi.label }}</span>
           <span class="text-lg">{{ kpi.icon }}</span>
         </div>
-        <div class="text-2xl font-bold mt-2 text-polaroid-warm-800">{{ kpi.value }}</div>
-        <div class="text-[11px] mt-1" :class="kpi.trend >= 0 ? 'text-green-600' : 'text-red-500'">
+        <div class="text-2xl font-bold mt-2 text-competitor-text">{{ kpi.value }}</div>
+        <div class="text-[11px] mt-1" :class="kpi.trend >= 0 ? 'text-competitor-success' : 'text-competitor-danger'">
           {{ kpi.trend >= 0 ? '▲' : '▼' }} {{ Math.abs(kpi.trend) }}% <span class="opacity-50">较上周</span>
         </div>
       </div>
     </div>
 
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <!-- 最近运行 -->
       <div class="polaroid-card rounded-lg col-span-2">
-        <div class="flex items-center justify-between p-4 border-b border-polaroid-warm-200">
+        <div class="flex items-center justify-between p-4 border-b border-competitor-border">
           <h3 class="font-semibold text-sm">最近运行</h3>
-          <button @click="goTo('/runs')" class="text-xs text-polaroid-warm-600 hover:text-polaroid-warm-800">查看全部 →</button>
+          <button @click="goTo('/runs')" class="text-xs text-competitor-primary hover:text-competitor-primary-dark">查看全部 →</button>
         </div>
-        <div class="divide-y divide-polaroid-warm-100">
-          <div v-for="run in recentRuns" :key="run.id" class="flex items-center gap-3 p-3 hover:bg-polaroid-warm-50 cursor-pointer" @click="goTo('/runs')">
+        <div class="divide-y divide-competitor-border/60">
+          <div v-for="run in recentRuns" :key="run.id" class="flex items-center gap-3 p-3 hover:bg-competitor-main cursor-pointer" @click="goTo('/runs')">
             <span class="w-2 h-2 rounded-full shrink-0" :class="runStatusColor(run.status)"></span>
             <div class="flex-1 min-w-0">
               <div class="text-sm font-medium truncate">{{ run.wfName }}</div>
-              <div class="text-[11px] opacity-50">{{ run.trigger }} · {{ run.started }} · {{ run.dur }}</div>
+              <div class="text-[11px] text-competitor-text-2">{{ run.trigger }} · {{ run.started }} · {{ run.dur }}</div>
             </div>
             <div class="text-right shrink-0">
-              <div class="text-xs font-medium" :class="run.gate ? 'text-polaroid-warm-700' : ''">{{ run.gate || run.status }}</div>
-              <div class="text-[11px] opacity-50">¥{{ run.cost }}</div>
+              <div class="text-xs font-medium" :class="run.gate ? 'text-competitor-text' : ''">{{ run.gate || run.status }}</div>
+              <div class="text-[11px] text-competitor-text-2">¥{{ run.cost }}</div>
             </div>
           </div>
         </div>
@@ -49,17 +49,17 @@
 
       <!-- 待我处理 -->
       <div class="polaroid-card rounded-lg">
-        <div class="p-4 border-b border-polaroid-warm-200">
+        <div class="p-4 border-b border-competitor-border">
           <h3 class="font-semibold text-sm">待我处理</h3>
         </div>
-        <div class="divide-y divide-polaroid-warm-100">
-          <div v-for="todo in todos" :key="todo.id" class="p-3 flex items-center gap-3 cursor-pointer hover:bg-polaroid-warm-50" @click="goTo(todo.route)">
+        <div class="divide-y divide-competitor-border/60">
+          <div v-for="todo in todos" :key="todo.id" class="p-3 flex items-center gap-3 cursor-pointer hover:bg-competitor-main" @click="goTo(todo.route)">
             <span class="text-lg">{{ todo.icon }}</span>
             <div class="flex-1 min-w-0">
               <div class="text-sm font-medium">{{ todo.title }}</div>
-              <div class="text-[11px] opacity-50">{{ todo.detail }}</div>
+              <div class="text-[11px] text-competitor-text-2">{{ todo.detail }}</div>
             </div>
-            <button class="text-xs px-2 py-1 bg-polaroid-warm-200 rounded hover:bg-polaroid-warm-300 shrink-0">处理</button>
+            <button class="text-xs px-2 py-1 bg-competitor-main rounded hover:bg-competitor-border shrink-0">处理</button>
           </div>
         </div>
       </div>
@@ -67,15 +67,15 @@
 
     <!-- 编排范式入口 -->
     <div class="polaroid-card rounded-lg">
-      <div class="p-4 border-b border-polaroid-warm-200">
+      <div class="p-4 border-b border-competitor-border">
         <h3 class="font-semibold text-sm">典型编排范式</h3>
-        <p class="text-[11px] opacity-50 mt-0.5">从 PRD §8 五大范式快速开始</p>
+        <p class="text-[11px] text-competitor-text-2 mt-0.5">从 PRD §8 五大范式快速开始</p>
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 p-4">
-        <div v-for="p in paradigms" :key="p.id" class="border border-polaroid-warm-200 rounded-lg p-3 hover:border-polaroid-warm-400 hover:shadow-sm cursor-pointer transition-all" @click="goTo('/workflows')">
+        <div v-for="p in paradigms" :key="p.id" class="border border-competitor-border rounded-lg p-3 hover:border-competitor-primary hover:shadow-sm cursor-pointer transition-all" @click="goTo('/workflows')">
           <div class="text-xl mb-2">{{ p.icon }}</div>
           <div class="text-sm font-medium">{{ p.name }}</div>
-          <div class="text-[11px] opacity-50 mt-1">{{ p.desc }}</div>
+          <div class="text-[11px] text-competitor-text-2 mt-1">{{ p.desc }}</div>
         </div>
       </div>
     </div>
@@ -140,9 +140,9 @@ onMounted(async () => {
 
 function runStatusColor(status) {
   return {
-    success: 'bg-green-500',
-    failed: 'bg-red-500',
-    running: 'bg-amber-400',
+    success: 'bg-competitor-success',
+    failed: 'bg-competitor-danger',
+    running: 'bg-competitor-warning',
   }[status] || 'bg-gray-400'
 }
 

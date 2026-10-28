@@ -478,6 +478,10 @@ async def run():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False, args=["--no-default-browser-check"])
         page = await browser.new_page(viewport={"width": 1680, "height": 1000})
+        # V15 登录守卫：预置 localStorage 已登录态，使 router.beforeEach 放行模块页直达
+        await page.add_init_script(
+            "localStorage.setItem('aio_auth', JSON.stringify({name:'雪 樱',role:'测试负责人',avatar:'雪',lastLoginAt:'2026-10-27'}))"
+        )
         errors = []
         page.on("pageerror", lambda e: errors.append(str(e)))
         print("🌐 有头浏览器已打开（非后台运行）· Ego 逐规则验证开始\n")

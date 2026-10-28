@@ -27,111 +27,62 @@
       }
     ]
   },
-  "asset_cd_001": {
-    "id": "asset_cd_001",
-    "type": "变更驱动用例",
-    "name": "支付模块变更驱动回归用例集",
-    "version": 1,
-    "status": "rejected",
+  "asset_ego_home": {
+    "id": "asset_ego_home",
+    "type": "用例",
+    "name": "Ego 主页轮播与新品展示认证用例",
+    "version": 2,
+    "status": "certified",
     "scope": [
-      "支付"
+      "Ego",
+      "主页"
     ],
     "quality": {
-      "mutationScore": 0.72,
-      "stability": 0.6,
+      "mutationScore": 0.9,
+      "stability": 0.93,
       "regressionResult": "pass"
     },
-    "references": [],
-    "certifiedAt": "",
+    "references": [
+      "wf_ego_mini"
+    ],
+    "certifiedAt": "2026-10-27",
     "retireAlert": false,
     "auditLog": [
       {
-        "ts": "2026-10-25",
-        "action": "created",
-        "by": "生成节点",
-        "detail": "生成待认证"
-      },
-      {
-        "ts": "2026-10-27 15:15",
-        "action": "rejected",
-        "by": "测试资产认证节点",
-        "detail": "未通过质量门槛（变异分数/稳定性/副作用回归）"
+        "ts": "2026-10-27",
+        "action": "certified",
+        "by": "质量门禁节点",
+        "detail": "轮播 5s / 单张不轮播 / 黑灰圆点通过"
       }
-    ],
-    "qualityChecks": [
-      {
-        "key": "mutationScore",
-        "label": "变异分数",
-        "value": 0.72,
-        "passed": false,
-        "threshold": "≥ 0.80"
-      },
-      {
-        "key": "stability",
-        "label": "稳定性",
-        "value": 0.6,
-        "passed": false,
-        "threshold": "≥ 0.80"
-      },
-      {
-        "key": "regressionResult",
-        "label": "副作用回归结果",
-        "value": "pass",
-        "passed": true,
-        "threshold": "必须通过"
-      }
-    ],
-    "qualityGate": "未通过"
+    ]
   },
-  "asset_用例_617683b1": {
-    "id": "asset_用例_617683b1",
+  "asset_ego_cart": {
+    "id": "asset_ego_cart",
     "type": "用例",
-    "name": "V13验证资产",
-    "version": 2,
+    "name": "Ego 购物车结算规则认证用例",
+    "version": 1,
     "status": "pending",
     "scope": [
-      "新建"
+      "Ego",
+      "购物车"
     ],
     "quality": {
-      "mutationScore": 0.0,
-      "stability": 0.0,
-      "regressionResult": "pending"
+      "mutationScore": 0.82,
+      "stability": 0.85,
+      "regressionResult": "pass"
     },
-    "references": [],
-    "pinnedVersions": {},
+    "references": [
+      "wf_ego_mini"
+    ],
     "certifiedAt": "",
     "retireAlert": false,
     "auditLog": [
       {
-        "ts": "2026-10-27 15:15",
+        "ts": "2026-10-27",
         "action": "created",
-        "by": "认证资产库",
-        "detail": "新建资产待认证"
+        "by": "生成节点",
+        "detail": "全选联动 / 未选中置灰¥0 待认证"
       }
-    ],
-    "qualityChecks": [
-      {
-        "key": "mutationScore",
-        "label": "变异分数",
-        "value": 0.0,
-        "passed": false,
-        "threshold": "≥ 0.80"
-      },
-      {
-        "key": "stability",
-        "label": "稳定性",
-        "value": 0.0,
-        "passed": false,
-        "threshold": "≥ 0.80"
-      },
-      {
-        "key": "regressionResult",
-        "label": "副作用回归结果",
-        "value": "pending",
-        "passed": false,
-        "threshold": "必须通过"
-      }
-    ],
-    "qualityGate": "未通过"
+    ]
   }
 }

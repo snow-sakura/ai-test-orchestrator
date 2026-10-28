@@ -1,24 +1,24 @@
 <template>
   <div class="space-y-4">
-    <!-- 页头（竞品对齐：page-header / page-title） -->
+    <!-- 页头（竞品对齐：page-header / page-title / header-actions） -->
     <div class="page-header">
       <div>
         <h1 class="page-title">执行追踪</h1>
-        <p class="text-xs text-polaroid-warm-500 mt-0.5">
+        <p class="text-xs text-competitor-text-2 mt-0.5">
           共 {{ filteredRuns.length }} 条运行记录 · 支持按工作流 / 状态筛选 · 节点级时间线与门禁裁决
         </p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="header-actions">
         <select
           v-model="filterWorkflow"
-          class="px-2 py-1.5 text-sm border border-polaroid-warm-200 rounded-lg outline-none focus:ring-1 focus:ring-polaroid-warm-400 bg-white"
+          class="px-2 py-1.5 text-sm border border-competitor-border rounded-lg outline-none focus:ring-1 focus:ring-competitor-primary bg-white"
         >
           <option value="">全部工作流</option>
           <option v-for="wf in workflowNames" :key="wf" :value="wf">{{ wf }}</option>
         </select>
         <select
           v-model="filterStatus"
-          class="px-2 py-1.5 text-sm border border-polaroid-warm-200 rounded-lg outline-none focus:ring-1 focus:ring-polaroid-warm-400 bg-white"
+          class="px-2 py-1.5 text-sm border border-competitor-border rounded-lg outline-none focus:ring-1 focus:ring-competitor-primary bg-white"
         >
           <option value="">全部状态</option>
           <option value="completed">已完成</option>
@@ -34,10 +34,10 @@
         v-for="s in statusTabs"
         :key="s.key"
         @click="filterStatus = s.key"
-        :class="filterStatus === s.key ? 'bg-polaroid-warm-500 text-white' : 'bg-polaroid-warm-100 text-polaroid-warm-600 hover:bg-polaroid-warm-200'"
+        :class="filterStatus === s.key ? 'bg-competitor-primary text-white' : 'bg-competitor-main text-competitor-text hover:bg-competitor-border'"
         class="px-3 py-1 text-xs rounded-full transition-colors"
       >{{ s.label }}{{ filterStatus === s.key && s.key === '' ? `（${runs.length}）` : '' }}</button>
-      <span v-if="filterStatus !== '' || filterWorkflow !== ''" class="text-xs text-polaroid-warm-500">
+      <span v-if="filterStatus !== '' || filterWorkflow !== ''" class="text-xs text-competitor-text-2">
         已筛选 {{ filteredRuns.length }} 条
       </span>
     </div>
@@ -47,7 +47,7 @@
       <div
         v-for="run in filteredRuns"
         :key="run.id"
-        :class="selectedRun?.id === run.id ? 'ring-2 ring-polaroid-warm-400' : ''"
+        :class="selectedRun?.id === run.id ? 'ring-2 ring-competitor-primary' : ''"
         class="polaroid-card rounded-lg p-4 cursor-pointer transition-shadow hover:shadow-md"
         @click="selectRun(run)"
       >
@@ -58,23 +58,23 @@
                 class="w-2 h-2 rounded-full shrink-0"
                 :class="runStatusColor(run.status)"
               ></span>
-              <h3 class="font-semibold text-sm text-polaroid-warm-800 truncate">
+              <h3 class="font-semibold text-sm text-competitor-text truncate">
                 {{ run.workflow_name || run.workflow_id }}
               </h3>
               <span
-                class="text-[10px] px-2 py-0.5 rounded-full shrink-0"
+                class="status-tag shrink-0"
                 :class="runStatusBadge(run.status)"
               >{{ runStatusLabel(run.status) }}</span>
-              <span class="text-[10px] px-2 py-0.5 rounded-full bg-polaroid-warm-100 text-polaroid-warm-500 shrink-0">
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-competitor-main text-competitor-text-2 shrink-0">
                 {{ run.trigger }}
               </span>
             </div>
-            <div class="text-[11px] text-polaroid-warm-500 mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+            <div class="text-[11px] text-competitor-text-2 mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
               <span>🕐 {{ run.started }}</span>
               <span>⏱ {{ run.duration }}</span>
               <span>🧠 Token {{ run.tokens?.toLocaleString?.() || run.tokens || 0 }}</span>
               <span>💸 ¥{{ run.cost?.toFixed?.(4) || 0 }}</span>
-              <span v-if="run.gate?.verdict" class="text-green-600 font-medium">
+              <span v-if="run.gate?.verdict" class="text-competitor-success font-medium">
                 门禁：{{ run.gate.verdict }}
               </span>
             </div>
@@ -82,27 +82,27 @@
           <div class="flex items-center gap-1 shrink-0">
             <button
               @click.stop="selectRun(run)"
-              class="text-xs px-2 py-1 border border-polaroid-warm-300 rounded hover:bg-polaroid-warm-100"
+              class="text-xs px-2 py-1 border border-competitor-border rounded hover:bg-competitor-main"
             >查看</button>
             <button
               @click.stop="triggerRun(run)"
-              class="text-xs px-2 py-1 bg-polaroid-warm-500 text-white rounded hover:bg-polaroid-warm-600"
+              class="text-xs px-2 py-1 bg-competitor-primary text-white rounded hover:bg-competitor-primary-dark"
             >重新运行</button>
           </div>
         </div>
       </div>
-      <div v-if="filteredRuns.length === 0" class="polaroid-card rounded-lg p-10 text-center text-polaroid-warm-500 text-sm">
+      <div v-if="filteredRuns.length === 0" class="card-container p-10 text-center text-competitor-text-2 text-sm">
         暂无匹配的运行记录
       </div>
     </div>
 
     <!-- 运行详情（节点级时间线 + 执行面板 + 门禁裁决） -->
-    <div v-if="selectedRun" class="polaroid-card rounded-lg">
+    <div v-if="selectedRun" class="card-container">
       <!-- 详情头部 -->
-      <div class="flex items-center justify-between p-4 border-b border-polaroid-warm-200">
+      <div class="flex items-center justify-between p-4 border-b border-competitor-border">
         <div>
-          <h3 class="font-bold text-polaroid-warm-800">运行详情</h3>
-          <p class="text-[11px] text-polaroid-warm-500 mt-0.5">{{ selectedRun.id }}</p>
+          <h3 class="font-bold text-competitor-text">运行详情</h3>
+          <p class="text-[11px] text-competitor-text-2 mt-0.5">{{ selectedRun.id }}</p>
         </div>
         <button @click="selectedRun = null" class="text-xl leading-none opacity-50 hover:opacity-100">&times;</button>
       </div>
@@ -112,118 +112,118 @@
         <div>
           <div class="flex items-center justify-between mb-3">
             <h4 class="font-semibold text-sm">节点级时间线（PRD §7.4）</h4>
-            <button @click="refreshSelectedRun" class="text-xs text-polaroid-warm-600 hover:text-polaroid-warm-800">↻ 刷新</button>
+            <button @click="refreshSelectedRun" class="text-xs text-competitor-primary hover:text-competitor-primary-dark">↻ 刷新</button>
           </div>
-          <div class="space-y-0 relative">
+          <div class="space-y-0 relative max-h-120 overflow-y-auto pr-2">
             <div
               v-for="(item, idx) in selectedRun.timeline"
               :key="item.nodeId + '-' + item.seq"
               class="relative pl-8 pb-4"
             >
               <!-- 时间线竖线 -->
-              <div v-if="idx < selectedRun.timeline.length - 1" class="absolute left-2.5 top-6 bottom-0 w-0.5 bg-polaroid-warm-200"></div>
+              <div v-if="idx < selectedRun.timeline.length - 1" class="absolute left-2.5 top-6 bottom-0 w-0.5 bg-competitor-border"></div>
               <!-- 节点圆点 -->
               <div
                 class="absolute left-0 top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
                 :class="nodeStatusClass(item.status)"
               >{{ item.seq }}</div>
               <!-- 节点卡片 -->
-              <div class="rounded-lg border border-polaroid-warm-200 bg-white p-3 space-y-1.5">
+              <div class="rounded-lg border border-competitor-border bg-white p-3 space-y-1.5">
                 <div class="flex items-center justify-between">
-                  <div class="font-semibold text-sm text-polaroid-warm-800">{{ item.label }}</div>
-                  <span :class="nodeStatusText(item.status)" class="text-[10px] px-2 py-0.5 rounded-full bg-polaroid-warm-100">
+                  <div class="font-semibold text-sm text-competitor-text">{{ item.label }}</div>
+                  <span :class="nodeStatusText(item.status)" class="text-[10px] px-2 py-0.5 rounded-full bg-competitor-main">
                     {{ nodeStatusLabel(item.status) }}
                   </span>
                 </div>
-                <div class="text-[11px] text-polaroid-warm-500 flex flex-wrap gap-x-3">
+                <div class="text-[11px] text-competitor-text-2 flex flex-wrap gap-x-3">
                   <span>{{ item.model }}</span>
                   <span>⏱ {{ item.duration }}</span>
                   <span>🧠 {{ item.tokens }}</span>
                   <span>💸 ¥{{ item.cost?.toFixed?.(4) }}</span>
                 </div>
                 <!-- 展开详情 -->
-                <div v-if="expandedNodes[item.nodeId]" class="space-y-2 mt-2 border-t border-polaroid-warm-100 pt-2">
+                <div v-if="expandedNodes[item.nodeId]" class="space-y-2 mt-2 border-t border-competitor-border/60 pt-2">
                   <div>
-                    <div class="text-[10px] font-medium text-polaroid-warm-500 mb-1">推理摘要</div>
-                    <div class="text-xs text-polaroid-warm-700">{{ item.reasoning || '—' }}</div>
+                    <div class="text-[10px] font-medium text-competitor-text-2 mb-1">推理摘要</div>
+                    <div class="text-xs text-competitor-text">{{ item.reasoning || '—' }}</div>
                   </div>
                   <div v-if="item.tools?.length">
-                    <div class="text-[10px] font-medium text-polaroid-warm-500 mb-1">工具调用</div>
+                    <div class="text-[10px] font-medium text-competitor-text-2 mb-1">工具调用</div>
                     <div class="flex flex-wrap gap-1">
-                      <span v-for="t in item.tools" :key="t" class="px-2 py-0.5 text-[10px] bg-polaroid-warm-100 rounded-full">{{ t }}</span>
+                      <span v-for="t in item.tools" :key="t" class="px-2 py-0.5 text-[10px] bg-competitor-main rounded-full">{{ t }}</span>
                     </div>
                   </div>
                   <div>
-                    <div class="text-[10px] font-medium text-polaroid-warm-500 mb-1">输入绑定</div>
-                    <div class="text-xs text-polaroid-warm-700 font-mono">{{ JSON.stringify(item.input?.payload || item.input || {}) }}</div>
+                    <div class="text-[10px] font-medium text-competitor-text-2 mb-1">输入绑定</div>
+                    <div class="text-xs text-competitor-text font-mono">{{ JSON.stringify(item.input?.payload || item.input || {}) }}</div>
                   </div>
                   <div>
-                    <div class="text-[10px] font-medium text-polaroid-warm-500 mb-1">输出结果</div>
-                    <div class="text-xs text-polaroid-warm-700 font-mono break-all">{{ JSON.stringify(item.output || {}) }}</div>
+                    <div class="text-[10px] font-medium text-competitor-text-2 mb-1">输出结果</div>
+                    <div class="text-xs text-competitor-text font-mono break-all">{{ JSON.stringify(item.output || {}) }}</div>
                   </div>
                   <div v-if="item.evidence?.length">
-                    <div class="text-[10px] font-medium text-polaroid-warm-500 mb-1">证据引用</div>
+                    <div class="text-[10px] font-medium text-competitor-text-2 mb-1">证据引用</div>
                     <div class="flex flex-wrap gap-1">
-                      <span v-for="ev in item.evidence" :key="ev" class="px-2 py-0.5 text-[10px] bg-polaroid-warm-50 border border-polaroid-warm-200 rounded-full">
+                      <span v-for="ev in item.evidence" :key="ev" class="px-2 py-0.5 text-[10px] bg-competitor-main border border-competitor-border rounded-full">
                         {{ ev }}
                       </span>
                     </div>
                   </div>
-                  <div v-if="item.gate" class="rounded bg-polaroid-warm-50 border border-polaroid-warm-200 p-2 mt-1">
-                    <div class="text-[11px] font-medium text-polaroid-warm-800">门禁裁决（确定性引擎）</div>
-                    <div class="text-xs text-polaroid-warm-700 mt-0.5">判定：{{ item.gate.verdict }} · 引擎：{{ item.gate.engine }}</div>
-                    <div class="text-[11px] text-polaroid-warm-500 mt-0.5">归因叙述（模型）：{{ item.gate.narrative }}</div>
+                  <div v-if="item.gate" class="rounded bg-competitor-main border border-competitor-border p-2 mt-1">
+                    <div class="text-[11px] font-medium text-competitor-text">门禁裁决（确定性引擎）</div>
+                    <div class="text-xs text-competitor-text mt-0.5">判定：{{ item.gate.verdict }} · 引擎：{{ item.gate.engine }}</div>
+                    <div class="text-[11px] text-competitor-text-2 mt-0.5">归因叙述（模型）：{{ item.gate.narrative }}</div>
                   </div>
                 </div>
                 <button
                   @click="toggleNode(item.nodeId)"
-                  class="text-xs text-polaroid-warm-500 hover:text-polaroid-warm-700 mt-1"
+                  class="text-xs text-competitor-text-2 hover:text-competitor-text mt-1"
                 >{{ expandedNodes[item.nodeId] ? '收起详情' : '展开执行面板' }}</button>
               </div>
             </div>
-            <div v-if="!selectedRun.timeline?.length" class="text-xs text-polaroid-warm-500 pl-8">该运行暂无节点级时间线</div>
+            <div v-if="!selectedRun.timeline?.length" class="text-xs text-competitor-text-2 pl-8">该运行暂无节点级时间线</div>
           </div>
         </div>
 
         <!-- 右侧：门禁裁决 + 执行日志 -->
         <div class="space-y-4">
           <!-- 门禁裁决区（确定性判定 + 归因叙述分离，PRD 原则五） -->
-          <div class="rounded-lg border border-polaroid-warm-200 bg-polaroid-warm-50 p-4">
-            <div class="font-semibold text-sm text-polaroid-warm-800 mb-2">门禁裁决区（PRD 原则五）</div>
+          <div class="rounded-lg border border-competitor-border bg-competitor-main p-4">
+            <div class="font-semibold text-sm text-competitor-text mb-2">门禁裁决区（PRD 原则五）</div>
             <template v-if="selectedRun.gate">
               <div class="space-y-2">
                 <div>
-                  <div class="text-[10px] font-medium text-polaroid-warm-500">确定性判定（规则引擎）</div>
-                  <div class="text-lg font-bold" :class="selectedRun.gate.verdict === '通过' ? 'text-green-600' : 'text-red-500'">
+                  <div class="text-[10px] font-medium text-competitor-text-2">确定性判定（规则引擎）</div>
+                  <div class="text-lg font-bold" :class="selectedRun.gate.verdict === '通过' ? 'text-competitor-success' : 'text-competitor-danger'">
                     {{ selectedRun.gate.verdict }}
                   </div>
                 </div>
                 <div>
-                  <div class="text-[10px] font-medium text-polaroid-warm-500">归因叙述（模型生成，不得覆盖判定）</div>
-                  <div class="text-xs text-polaroid-warm-700">{{ selectedRun.gate.narrative }}</div>
+                  <div class="text-[10px] font-medium text-competitor-text-2">归因叙述（模型生成，不得覆盖判定）</div>
+                  <div class="text-xs text-competitor-text">{{ selectedRun.gate.narrative }}</div>
                 </div>
                 <div>
-                  <div class="text-[10px] font-medium text-polaroid-warm-500">裁决引擎</div>
-                  <div class="text-xs text-polaroid-warm-700">{{ selectedRun.gate.engine }}</div>
+                  <div class="text-[10px] font-medium text-competitor-text-2">裁决引擎</div>
+                  <div class="text-xs text-competitor-text">{{ selectedRun.gate.engine }}</div>
                 </div>
               </div>
             </template>
-            <div v-else class="text-xs text-polaroid-warm-500">该运行未触发门禁节点</div>
+            <div v-else class="text-xs text-competitor-text-2">该运行未触发门禁节点</div>
           </div>
 
           <!-- 执行日志（PRD §7.4） -->
-          <div class="rounded-lg border border-polaroid-warm-200 p-4">
-            <div class="font-semibold text-sm text-polaroid-warm-800 mb-2">执行日志（PRD §7.4）</div>
+          <div class="rounded-lg border border-competitor-border p-4">
+            <div class="font-semibold text-sm text-competitor-text mb-2">执行日志（PRD §7.4）</div>
             <div class="space-y-1 max-h-60 overflow-y-auto">
               <div
                 v-for="(log, i) in selectedRun.logs || []"
                 :key="i"
                 class="flex gap-2 text-xs"
               >
-                <span class="text-polaroid-warm-400 shrink-0 font-mono">{{ log.time }}</span>
-                <span class="text-polaroid-warm-700">{{ log.msg }}</span>
+                <span class="text-competitor-text-2 shrink-0 font-mono">{{ log.time }}</span>
+                <span class="text-competitor-text">{{ log.msg }}</span>
               </div>
-              <div v-if="!selectedRun.logs?.length" class="text-xs text-polaroid-warm-500">暂无日志</div>
+              <div v-if="!selectedRun.logs?.length" class="text-xs text-competitor-text-2">暂无日志</div>
             </div>
           </div>
         </div>
@@ -231,7 +231,7 @@
     </div>
 
     <!-- Toast -->
-    <div v-if="toast" class="fixed bottom-6 right-6 z-50 px-4 py-2 bg-polaroid-warm-900 text-white text-sm rounded-lg shadow-lg">
+    <div v-if="toast" class="fixed bottom-6 right-6 z-50 px-4 py-2 bg-competitor-navy text-white text-sm rounded-lg shadow-lg">
       {{ toast }}
     </div>
   </div>
@@ -278,7 +278,7 @@ function showToast(msg) {
 }
 
 function runStatusColor(status) {
-  return { completed: 'bg-green-500', running: 'bg-amber-400', failed: 'bg-red-500' }[status] || 'bg-gray-400'
+  return { completed: 'bg-competitor-success', running: 'bg-competitor-warning', failed: 'bg-competitor-danger' }[status] || 'bg-gray-400'
 }
 function runStatusLabel(status) {
   return { completed: '已完成', running: '运行中', failed: '失败' }[status] || status
@@ -287,7 +287,7 @@ function runStatusBadge(status) {
   return { completed: 'bg-green-100 text-green-700', running: 'bg-amber-100 text-amber-700', failed: 'bg-red-100 text-red-700' }[status] || 'bg-gray-100 text-gray-700'
 }
 function nodeStatusClass(status) {
-  return { success: 'bg-green-500 text-white', running: 'bg-amber-400 text-white', failed: 'bg-red-500 text-white', pending: 'bg-gray-300 text-gray-600' }[status] || 'bg-gray-300 text-gray-600'
+  return { success: 'bg-competitor-success text-white', running: 'bg-competitor-warning text-white', failed: 'bg-competitor-danger text-white', pending: 'bg-gray-300 text-gray-600' }[status] || 'bg-gray-300 text-gray-600'
 }
 function nodeStatusText(status) {
   return { success: 'text-green-700', running: 'text-amber-700', failed: 'text-red-700', pending: 'text-gray-500' }[status] || 'text-gray-500'

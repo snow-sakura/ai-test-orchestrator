@@ -4,55 +4,57 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">统一配置中心</h1>
-        <p class="text-xs text-polaroid-warm-500 mt-0.5">
+        <p class="text-xs text-competitor-text-2 mt-0.5">
           驱动 / 模型 / 通知 / 环境检测 / 权限控制 · 预算与熔断（PRD §6.8 / §6.9）
         </p>
       </div>
     </div>
 
-    <!-- 左侧分区导航 -->
-    <div class="flex gap-4">
-      <!-- 分区列表 -->
-      <div class="w-44 shrink-0 space-y-1">
-        <button
-          v-for="s in sections" :key="s.key"
-          @click="activeSection = s.key"
-          class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
-          :class="activeSection === s.key ? 'bg-polaroid-warm-500 text-white' : 'text-polaroid-warm-600 hover:bg-polaroid-warm-50'"
-        >{{ s.label }}</button>
-      </div>
+    <!-- 左侧分区导航 + 右侧分区内容 -->
+    <div class="card-container">
+      <div class="flex gap-4">
+        <!-- 分区列表 -->
+        <div class="w-44 shrink-0 space-y-1">
+          <button
+            v-for="s in sections" :key="s.key"
+            @click="activeSection = s.key"
+            class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
+            :class="activeSection === s.key ? 'bg-competitor-primary text-white' : 'text-competitor-text-2 hover:bg-competitor-main'"
+          >{{ s.label }}</button>
+        </div>
 
-      <!-- 分区内容 -->
-      <div class="flex-1 min-w-0 space-y-3">
-        <div v-if="activeSection" class="polaroid-card rounded-lg p-4">
-          <h3 class="text-sm font-bold text-polaroid-warm-800">{{ sectionLabel(activeSection) }}</h3>
-          <div class="space-y-3 mt-3">
-            <div
-              v-for="item in activeItems" :key="item.key"
-              class="border border-polaroid-warm-200 rounded-lg p-3"
-            >
-              <div class="flex items-start justify-between gap-2">
-                <div class="min-w-0 flex-1">
-                  <div class="text-xs font-bold text-polaroid-warm-700">{{ item.key }}</div>
-                  <div class="text-[10px] text-polaroid-warm-500 mt-0.5">{{ item.desc }}</div>
+        <!-- 分区内容 -->
+        <div class="flex-1 min-w-0">
+          <div v-if="activeSection">
+            <h3 class="text-sm font-bold text-competitor-text mb-3">{{ sectionLabel(activeSection) }}</h3>
+            <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+              <div
+                v-for="item in activeItems" :key="item.key"
+                class="border border-competitor-border rounded-lg p-3"
+              >
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0 flex-1">
+                    <div class="text-xs font-bold text-competitor-text">{{ item.key }}</div>
+                    <div class="text-[10px] text-competitor-text-2 mt-0.5">{{ item.desc }}</div>
+                  </div>
+                  <!-- 控件 -->
+                  <select
+                    v-if="item.type === 'select' || item.type === 'switch'"
+                    :value="item.value"
+                    @change="updateItem(activeSection, item, $event.target.value)"
+                    class="shrink-0 px-2 py-1 text-xs border border-competitor-border rounded outline-none bg-white"
+                  >
+                    <option v-for="o in item.options" :key="o" :value="o">{{ o }}</option>
+                  </select>
+                  <input
+                    v-else-if="item.type === 'number' || item.type === 'text'"
+                    :value="item.value"
+                    @blur="updateItem(activeSection, item, $event.target.value)"
+                    :type="item.type === 'number' ? 'number' : 'text'"
+                    class="shrink-0 w-28 px-2 py-1 text-xs border border-competitor-border rounded outline-none"
+                  />
+                  <span v-else class="shrink-0 text-xs text-competitor-text-2">{{ item.value }}</span>
                 </div>
-                <!-- 控件 -->
-                <select
-                  v-if="item.type === 'select' || item.type === 'switch'"
-                  :value="item.value"
-                  @change="updateItem(activeSection, item, $event.target.value)"
-                  class="shrink-0 px-2 py-1 text-xs border border-polaroid-warm-300 rounded outline-none bg-white"
-                >
-                  <option v-for="o in item.options" :key="o" :value="o">{{ o }}</option>
-                </select>
-                <input
-                  v-else-if="item.type === 'number' || item.type === 'text'"
-                  :value="item.value"
-                  @blur="updateItem(activeSection, item, $event.target.value)"
-                  :type="item.type === 'number' ? 'number' : 'text'"
-                  class="shrink-0 w-28 px-2 py-1 text-xs border border-polaroid-warm-300 rounded outline-none"
-                />
-                <span v-else class="shrink-0 text-xs text-polaroid-warm-600">{{ item.value }}</span>
               </div>
             </div>
           </div>
@@ -62,27 +64,27 @@
 
     <!-- 预算与熔断 -->
     <div>
-      <h3 class="text-sm font-bold text-polaroid-warm-800 mb-3">预算、熔断与并发（平台代码强制执行，不交由模型判断）</h3>
+      <h3 class="text-sm font-bold text-competitor-text mb-3">预算、熔断与并发（平台代码强制执行，不交由模型判断）</h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div
           v-for="b in budgets" :key="b.id"
-          class="polaroid-card rounded-lg p-4"
+          class="card-container"
         >
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-xs font-bold text-polaroid-warm-800">{{ b.scope }}</span>
+            <span class="text-xs font-bold text-competitor-text">{{ b.scope }}</span>
             <span class="text-[10px] px-2 py-0.5 rounded-full" :class="onExceedClass(b.onExceed)">{{ b.onExceed }}</span>
           </div>
-          <p class="text-[11px] text-polaroid-warm-500 mt-1">{{ b.desc }}</p>
-          <div class="mt-2 space-y-1 text-[11px] text-polaroid-warm-600">
-            <div v-if="b.tokenBudget">Token 预算：<b class="text-polaroid-warm-800">{{ b.tokenBudget.toLocaleString() }}</b></div>
-            <div v-if="b.timeBudgetSec">时间预算：<b class="text-polaroid-warm-800">{{ b.timeBudgetSec }}s</b></div>
-            <div v-if="b.maxIterations">最大迭代：<b class="text-polaroid-warm-800">{{ b.maxIterations }}</b></div>
-            <div v-if="b.noProgressFuse">无进展熔断：<b class="text-polaroid-warm-800">{{ b.noProgressFuse }} 次</b></div>
+          <p class="text-[11px] text-competitor-text-2 mt-1">{{ b.desc }}</p>
+          <div class="mt-2 space-y-1 text-[11px] text-competitor-text-2">
+            <div v-if="b.tokenBudget">Token 预算：<b class="text-competitor-text">{{ b.tokenBudget.toLocaleString() }}</b></div>
+            <div v-if="b.timeBudgetSec">时间预算：<b class="text-competitor-text">{{ b.timeBudgetSec }}s</b></div>
+            <div v-if="b.maxIterations">最大迭代：<b class="text-competitor-text">{{ b.maxIterations }}</b></div>
+            <div v-if="b.noProgressFuse">无进展熔断：<b class="text-competitor-text">{{ b.noProgressFuse }} 次</b></div>
           </div>
           <select
             :value="b.onExceed"
             @change="updateBudget(b, $event.target.value)"
-            class="mt-2 w-full px-2 py-1 text-xs border border-polaroid-warm-300 rounded outline-none bg-white"
+            class="mt-2 w-full px-2 py-1 text-xs border border-competitor-border rounded outline-none bg-white"
           >
             <option v-for="p in policies" :key="p" :value="p">{{ p }}</option>
           </select>
@@ -91,7 +93,7 @@
     </div>
 
     <!-- Toast -->
-    <div v-if="toast" class="fixed bottom-6 right-6 z-50 px-4 py-2 bg-polaroid-warm-900 text-white text-sm rounded-lg shadow-lg">
+    <div v-if="toast" class="fixed bottom-6 right-6 z-50 px-4 py-2 bg-competitor-navy text-white text-sm rounded-lg shadow-lg">
       {{ toast }}
     </div>
   </div>
