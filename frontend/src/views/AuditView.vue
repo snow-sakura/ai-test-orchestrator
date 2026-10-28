@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-5">
     <!-- 页头（竞品对齐：page-header / page-title / header-actions） -->
     <div class="page-header">
       <div>
@@ -77,7 +77,7 @@
       </div>
 
       <!-- 证据列表 -->
-      <div class="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+      <div class="space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
         <div
           v-for="(ev, idx) in filteredEvents"
           :key="ev.id"

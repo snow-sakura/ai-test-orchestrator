@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-5">
     <!-- 页头（竞品对齐：page-header / page-title / header-actions） -->
     <div class="page-header">
       <div>
@@ -44,7 +44,7 @@
       </div>
 
       <!-- 资产卡片网格 -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
         <div
           v-for="asset in filteredAssets"
           :key="asset.id"

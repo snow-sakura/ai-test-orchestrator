@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-5">
     <!-- 页头（竞品对齐：page-header / page-title / header-actions） -->
     <div class="page-header">
       <div>
@@ -28,7 +28,7 @@
 
     <!-- ① 模型注册表 -->
     <div v-if="activeTab === 'registry'">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div
           v-for="m in registry" :key="m.id"
           class="polaroid-card rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -92,7 +92,7 @@
     <div v-if="activeTab === 'quota'">
       <div class="space-y-4">
         <!-- 当日额度卡片 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div
             v-for="q in quotas" :key="q.model"
             class="polaroid-card rounded-lg p-4"
@@ -123,7 +123,7 @@
         <!-- 授予记录 -->
         <div class="card-container">
           <h4 class="text-sm font-bold text-competitor-text mb-2">额度授予记录（按账号 · 可撤销）</h4>
-          <div class="space-y-2">
+          <div class="space-y-2 max-h-[400px] overflow-y-auto pr-1">
             <div v-for="g in grants" :key="g.id" class="flex items-center justify-between text-xs gap-2">
               <span class="text-competitor-text">{{ g.account }} · {{ g.modelName }}</span>
               <span class="text-competitor-text-2">{{ g.date }} 叠加 +{{ g.extraQuota }}</span>
@@ -144,7 +144,7 @@
     <div v-if="activeTab === 'usage'">
       <div class="card-container">
         <h4 class="text-sm font-bold text-competitor-text mb-2">计量与成本（按工作流 / 节点 / 模型维度）</h4>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
           <table class="w-full text-xs">
             <thead>
               <tr class="text-left text-competitor-text-2 border-b border-competitor-border">

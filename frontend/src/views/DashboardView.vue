@@ -1,81 +1,27 @@
 <template>
-  <div class="space-y-5">
-    <!-- 页头（竞品对齐：page-header / page-title） -->
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">工作台总览</h1>
-        <p class="text-xs text-competitor-text-2 mt-0.5">
-          {{ pendingCount }} 项待办审批 · {{ runningCount }} 个运行进行中
-        </p>
+  <!-- 竞品首页导航：独立全屏渐变背景 + 居中 1200px 卡片网格（meta.noLayout） -->
+  <div class="home-page">
+    <div class="home-content">
+      <!-- 标题区（竞品：3.5rem 主标题 + 1.5rem 副标题） -->
+      <div class="home-header">
+        <h1 class="home-title">AI 测试编排平台</h1>
+        <p class="home-subtitle">选择模块快速进入工作区 · 智能体工作流 / 质量资产 / 平台运维</p>
       </div>
-      <button @click="goTo('/workflows')" class="px-4 py-2 bg-competitor-primary text-white text-sm rounded-lg hover:bg-competitor-primary-dark shadow-sm transition-colors">＋ 新建工作流</button>
-    </div>
 
-    <!-- KPI 卡片 -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <div v-for="kpi in kpis" :key="kpi.label" class="polaroid-card rounded-lg p-4">
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-competitor-text-2">{{ kpi.label }}</span>
-          <span class="text-lg">{{ kpi.icon }}</span>
-        </div>
-        <div class="text-2xl font-bold mt-2 text-competitor-text">{{ kpi.value }}</div>
-        <div class="text-[11px] mt-1" :class="kpi.trend >= 0 ? 'text-competitor-success' : 'text-competitor-danger'">
-          {{ kpi.trend >= 0 ? '▲' : '▼' }} {{ Math.abs(kpi.trend) }}% <span class="opacity-50">较上周</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <!-- 最近运行 -->
-      <div class="polaroid-card rounded-lg col-span-2">
-        <div class="flex items-center justify-between p-4 border-b border-competitor-border">
-          <h3 class="font-semibold text-sm">最近运行</h3>
-          <button @click="goTo('/runs')" class="text-xs text-competitor-primary hover:text-competitor-primary-dark">查看全部 →</button>
-        </div>
-        <div class="divide-y divide-competitor-border/60">
-          <div v-for="run in recentRuns" :key="run.id" class="flex items-center gap-3 p-3 hover:bg-competitor-main cursor-pointer" @click="goTo('/runs')">
-            <span class="w-2 h-2 rounded-full shrink-0" :class="runStatusColor(run.status)"></span>
-            <div class="flex-1 min-w-0">
-              <div class="text-sm font-medium truncate">{{ run.wfName }}</div>
-              <div class="text-[11px] text-competitor-text-2">{{ run.trigger }} · {{ run.started }} · {{ run.dur }}</div>
-            </div>
-            <div class="text-right shrink-0">
-              <div class="text-xs font-medium" :class="run.gate ? 'text-competitor-text' : ''">{{ run.gate || run.status }}</div>
-              <div class="text-[11px] text-competitor-text-2">¥{{ run.cost }}</div>
-            </div>
+      <!-- 10 模块导航卡（竞品：auto-fit minmax(250px,1fr) gap 30px，80px 圆形 icon） -->
+      <div class="nav-grid">
+        <div
+          v-for="card in navCards"
+          :key="card.path"
+          class="nav-card polaroid-card"
+          @click="goTo(card.path)"
+        >
+          <div class="nav-icon" :style="{ background: card.color }">
+            <span class="nav-icon-emoji">{{ card.icon }}</span>
           </div>
-        </div>
-      </div>
-
-      <!-- 待我处理 -->
-      <div class="polaroid-card rounded-lg">
-        <div class="p-4 border-b border-competitor-border">
-          <h3 class="font-semibold text-sm">待我处理</h3>
-        </div>
-        <div class="divide-y divide-competitor-border/60">
-          <div v-for="todo in todos" :key="todo.id" class="p-3 flex items-center gap-3 cursor-pointer hover:bg-competitor-main" @click="goTo(todo.route)">
-            <span class="text-lg">{{ todo.icon }}</span>
-            <div class="flex-1 min-w-0">
-              <div class="text-sm font-medium">{{ todo.title }}</div>
-              <div class="text-[11px] text-competitor-text-2">{{ todo.detail }}</div>
-            </div>
-            <button class="text-xs px-2 py-1 bg-competitor-main rounded hover:bg-competitor-border shrink-0">处理</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 编排范式入口 -->
-    <div class="polaroid-card rounded-lg">
-      <div class="p-4 border-b border-competitor-border">
-        <h3 class="font-semibold text-sm">典型编排范式</h3>
-        <p class="text-[11px] text-competitor-text-2 mt-0.5">从 PRD §8 五大范式快速开始</p>
-      </div>
-      <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 p-4">
-        <div v-for="p in paradigms" :key="p.id" class="border border-competitor-border rounded-lg p-3 hover:border-competitor-primary hover:shadow-sm cursor-pointer transition-all" @click="goTo('/workflows')">
-          <div class="text-xl mb-2">{{ p.icon }}</div>
-          <div class="text-sm font-medium">{{ p.name }}</div>
-          <div class="text-[11px] text-competitor-text-2 mt-1">{{ p.desc }}</div>
+          <h3 class="nav-card-title">{{ card.title }}</h3>
+          <p class="nav-card-desc">{{ card.desc }}</p>
+          <div class="nav-card-arrow">进入 →</div>
         </div>
       </div>
     </div>
@@ -83,70 +29,157 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 
 const router = useRouter()
-const kpis = ref([])
-const recentRuns = ref([])
-const todos = ref([])
-const paradigms = ref([])
-const pendingCount = ref(0)
-const runningCount = ref(0)
 
-const fallbackParadigms = [
-  { id: 'cicd', name: 'CI/CD 质量门禁', icon: '🚦', desc: '变更→执行→门禁' },
-  { id: 'explore', name: '智能探索回归', icon: '🕵️', desc: '浏览器智能体+异步' },
-  { id: 'mobile', name: '移动端多端回归', icon: '📱', desc: '设备并行+资源锁' },
-  { id: 'design', name: '需求到用例', icon: '🧩', desc: '解析→生成→认证' },
-  { id: 'external', name: '外部智能体按需', icon: '🌐', desc: '鉴权→触发→回调' },
+const navCards = [
+  { path: '/workflows', title: '工作流列表', desc: '浏览、搜索与管理全部编排工作流', icon: '📋', color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  { path: '/editor', title: '编排画布', desc: '拖拽式节点编排，实时预览与调试', icon: '✎', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+  { path: '/runs', title: '执行追踪', desc: '查看运行状态、日志与门禁结果', icon: '▶', color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  { path: '/assets', title: '认证资产库', desc: '用例 / 脚本 / 数据模板质量认证与版本锁定', icon: '🏅', color: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+  { path: '/tasks', title: '异步任务', desc: '长耗时任务调度、重试与结果回收', icon: '⏳', color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+  { path: '/models', title: '模型与额度', desc: 'Agnes 3.0 Flash 配置、Token 额度与用量', icon: '🧠', color: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)' },
+  { path: '/audit', title: '审计账本', desc: '哈希链不可篡改操作日志与证据追溯', icon: '🔒', color: 'linear-gradient(135deg, #667eea 0%, #4facfe 100%)' },
+  { path: '/capabilities', title: '开放能力', desc: '外部智能体接入审批与 API 网关', icon: '🌐', color: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)' },
+  { path: '/resources', title: '资源与锁', desc: '设备 / 环境资源池与互斥锁管理', icon: '🗄️', color: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)' },
+  { path: '/settings', title: '配置中心', desc: '平台参数、预算阈值与合规策略', icon: '⚙️', color: 'linear-gradient(135deg, #c471f5 0%, #f7797b 100%)' },
 ]
-
-onMounted(async () => {
-  try {
-    const res = await axios.get('/api/dashboard/summary')
-    const data = res.data
-    kpis.value = data.kpis
-    recentRuns.value = data.recentRuns
-    todos.value = data.todos
-    paradigms.value = data.paradigms || fallbackParadigms
-    pendingCount.value = data.pendingCount
-    runningCount.value = data.runningCount
-  } catch (e) {
-    // 后端未启动时使用本地回退数据，保证页面可用
-    kpis.value = [
-      { label: '工作流总数', value: '8', icon: '📋', trend: 14 },
-      { label: '今日运行', value: '42', icon: '▶', trend: 8 },
-      { label: '通过率', value: '91%', icon: '✅', trend: 3 },
-      { label: '本月成本', value: '¥2,380', icon: '💸', trend: -6 },
-    ]
-    recentRuns.value = [
-      { id: 'r1', wfName: '代码变更驱动的 CI/CD 质量门禁', status: 'success', trigger: 'Git Push', started: '10-26 16:42', dur: '6m18s', cost: 4.82, gate: '有条件通过' },
-      { id: 'r2', wfName: '核心接口每日巡检', status: 'success', trigger: '定时', started: '10-26 09:00', dur: '2m05s', cost: 1.20, gate: '通过' },
-      { id: 'r3', wfName: '移动端多端回归', status: 'failed', trigger: '手动', started: '10-25 21:33', dur: '4m40s', cost: 3.10, gate: '阻断' },
-      { id: 'r4', wfName: '安全基线扫描流水线', status: 'running', trigger: 'Git Push', started: '10-25 15:20', dur: '进行中', cost: 0.85, gate: '' },
-    ]
-    todos.value = [
-      { id: 't1', icon: '✋', title: '人工审批门', detail: '工作流 wf_cicd · 高风险变更', route: '/runs' },
-      { id: 't2', icon: '📮', title: '缺陷归档确认', detail: '3 条待确认缺陷', route: '/assets' },
-      { id: 't3', icon: '🔑', title: '能力接入审批', detail: '2 项外部调用待审批', route: '/capabilities' },
-    ]
-    paradigms.value = fallbackParadigms
-    pendingCount.value = 5
-    runningCount.value = 2
-  }
-})
-
-function runStatusColor(status) {
-  return {
-    success: 'bg-competitor-success',
-    failed: 'bg-competitor-danger',
-    running: 'bg-competitor-warning',
-  }[status] || 'bg-gray-400'
-}
 
 function goTo(path) {
   router.push(path)
 }
 </script>
+
+<style scoped>
+/* ===== 竞品首页导航（testhub_platform-main Home.vue 复刻） ===== */
+.home-page {
+  height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  overflow: hidden;
+}
+
+.home-content {
+  width: 100%;
+  max-width: 1200px;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px 8px;
+  margin: -4px -8px;
+}
+
+/* 标题区 */
+.home-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.home-title {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 12px 0;
+  letter-spacing: -1px;
+}
+
+.home-subtitle {
+  font-size: 1.5rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 300;
+}
+
+/* 导航卡网格 */
+.nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 30px;
+}
+
+/* 单张导航卡（保留 .polaroid-card 类名供 Playwright 选择器兼容） */
+.nav-card {
+  background: white;
+  border-radius: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+.nav-card:hover .nav-icon {
+  transform: scale(1.1);
+}
+
+/* 80px 圆形彩色 icon */
+.nav-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  transition: transform 0.3s ease;
+}
+
+.nav-icon-emoji {
+  font-size: 36px;
+  line-height: 1;
+}
+
+/* 卡片文字 */
+.nav-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0 0 8px 0;
+}
+
+.nav-card-desc {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.6;
+  min-height: 40px;
+}
+
+.nav-card-arrow {
+  font-size: 13px;
+  color: #667eea;
+  font-weight: 600;
+  margin-top: 16px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: all 0.3s ease;
+}
+
+.nav-card:hover .nav-card-arrow {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .home-title { font-size: 2.2rem; }
+  .home-subtitle { font-size: 1rem; }
+  .nav-grid { gap: 16px; }
+  .nav-card { padding: 24px 16px; }
+  .nav-icon { width: 60px; height: 60px; }
+  .nav-icon-emoji { font-size: 28px; }
+}
+</style>

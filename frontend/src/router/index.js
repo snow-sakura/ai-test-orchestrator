@@ -5,7 +5,7 @@ import { useAuthStore } from '../stores/auth'
 const routes = [
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { title: '登录', noLayout: true, requiresAuth: false } },
   { path: '/', redirect: '/dashboard' },
-  { path: '/dashboard', name: 'dashboard', component: () => import('../views/DashboardView.vue'), meta: { title: '工作台总览', icon: '▦', requiresAuth: true } },
+  { path: '/dashboard', name: 'dashboard', component: () => import('../views/DashboardView.vue'), meta: { title: '工作台总览', icon: '▦', requiresAuth: true, noLayout: true } },
   { path: '/workflows', name: 'workflows', component: () => import('../views/WorkflowsView.vue'), meta: { title: '工作流列表', icon: '📋', requiresAuth: true } },
   { path: '/editor', name: 'editor', component: () => import('../views/EditorView.vue'), meta: { title: '编排画布', icon: '✎', requiresAuth: true } },
   { path: '/runs', name: 'runs', component: () => import('../views/RunsView.vue'), meta: { title: '执行追踪', icon: '▶', requiresAuth: true } },

@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-5">
     <!-- 页头（竞品对齐：page-header / page-title / header-actions） -->
     <div class="page-header">
       <div>
@@ -65,7 +65,7 @@
           <option v-for="t in resTypes" :key="t" :value="t">{{ t }}</option>
         </select>
       </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
         <div
           v-for="pool in filteredPools" :key="pool.id"
           class="polaroid-card rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -122,7 +122,7 @@
           class="ml-auto px-3 py-1.5 text-xs bg-competitor-primary text-white rounded-lg hover:bg-competitor-primary-dark"
         >＋ 获取锁</button>
       </div>
-      <div class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+      <div class="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
         <div
           v-for="lock in filteredLocks" :key="lock.id"
           class="polaroid-card rounded-lg p-4"

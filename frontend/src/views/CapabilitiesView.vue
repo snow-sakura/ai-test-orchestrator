@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-5">
     <!-- 页头（竞品对齐：page-header / page-title / header-actions） -->
     <div class="page-header">
       <div>
@@ -46,7 +46,7 @@
         </select>
       </div>
       <!-- 能力卡片网格 -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
         <div
           v-for="cap in filteredCaps" :key="cap.id"
           class="polaroid-card rounded-lg p-4 hover:shadow-md transition-shadow"

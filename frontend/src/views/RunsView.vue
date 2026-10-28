@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-5">
     <!-- 页头（竞品对齐：page-header / page-title / header-actions） -->
     <div class="page-header">
       <div>
@@ -107,14 +107,14 @@
         <button @click="selectedRun = null" class="text-xl leading-none opacity-50 hover:opacity-100">&times;</button>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 p-4">
         <!-- 节点级时间线（PRD §7.4） -->
         <div>
           <div class="flex items-center justify-between mb-3">
             <h4 class="font-semibold text-sm">节点级时间线（PRD §7.4）</h4>
             <button @click="refreshSelectedRun" class="text-xs text-competitor-primary hover:text-competitor-primary-dark">↻ 刷新</button>
           </div>
-          <div class="space-y-0 relative max-h-120 overflow-y-auto pr-2">
+          <div class="space-y-0 relative max-h-[300px] overflow-y-auto pr-2">
             <div
               v-for="(item, idx) in selectedRun.timeline"
               :key="item.nodeId + '-' + item.seq"

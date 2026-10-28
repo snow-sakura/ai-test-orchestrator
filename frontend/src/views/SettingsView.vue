@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-5">
     <!-- 页头（竞品对齐：page-header / page-title） -->
     <div class="page-header">
       <div>
@@ -65,7 +65,7 @@
     <!-- 预算与熔断 -->
     <div>
       <h3 class="text-sm font-bold text-competitor-text mb-3">预算、熔断与并发（平台代码强制执行，不交由模型判断）</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 max-h-[400px] overflow-y-auto pr-1 pb-1">
         <div
           v-for="b in budgets" :key="b.id"
           class="card-container"

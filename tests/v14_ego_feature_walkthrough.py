@@ -486,9 +486,9 @@ async def run():
         page.on("pageerror", lambda e: errors.append(str(e)))
         print("🌐 有头浏览器已打开（非后台运行）· Ego 逐规则验证开始\n")
 
-        # ① 侧栏 3 模块分组（竞品排版对齐）
+        # ① 侧栏 3 模块分组（竞品排版对齐）— V15.1: dashboard 独立无壳，侧栏断言改走 /workflows
         print("── ① 侧栏模块分组 + 面包屑（竞品排版对齐）──")
-        await page.goto(BASE + "/dashboard", wait_until="networkidle")
+        await page.goto(BASE + "/workflows", wait_until="networkidle")
         await page.wait_for_selector("text=测试编排", timeout=10000)
         check(await page.locator("text=测试编排").count() >= 1, "侧栏分组：测试编排")
         check(await page.locator("text=质量资产").count() >= 1, "侧栏分组：质量资产")

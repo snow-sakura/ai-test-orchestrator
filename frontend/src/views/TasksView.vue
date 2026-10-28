@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-5">
     <!-- 页头（竞品对齐：page-header / page-title / header-actions） -->
     <div class="page-header">
       <div>
@@ -41,7 +41,7 @@
     </div>
 
     <!-- 状态看板（PRD §6.4 全局任务看板：运行中 / 已完成 / 失败 / 超时） -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
       <div
         v-for="col in boardColumns"
         :key="col.key"

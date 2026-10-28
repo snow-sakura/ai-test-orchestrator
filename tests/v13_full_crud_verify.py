@@ -560,8 +560,8 @@ async def run():
         print("\n── ⑪ 跨模块业务串联 ──")
         # 工作台 → 各模块 → 返回
         await page.goto(BASE + "/dashboard", wait_until="networkidle")
-        await page.wait_for_selector("h1:has-text('工作台总览')", timeout=8000)
-        check(await page.locator("text=＋ 新建工作流").count() >= 1, "串联：工作台总览渲染")
+        await page.wait_for_selector(".home-title", timeout=8000)
+        check(await page.locator(".nav-card").count() >= 1, "串联：首页导航渲染")
         for route, sel in [
             ("/workflows", "h1:has-text('工作流列表')"),
             ("/runs", "h1:has-text('执行追踪')"),

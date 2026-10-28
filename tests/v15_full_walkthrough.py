@@ -235,11 +235,14 @@ async def run():
         await page_a.wait_for_selector("text=欢迎登录", timeout=10000)
         check("/login" in page_a.url or "欢迎登录" in await page_a.inner_text("body"),
               "未登录访问 /dashboard → 重定向 /login")
-        check(await page_a.locator(".card-container").count() >= 1, "/login 卡片容器可见")
+        check(await page_a.locator(".login-form-wrapper").count() >= 1, "/login 登录表单区可见")
+        check(await page_a.locator(".showcase-section").count() >= 1, "/login 左侧渐变展示区可见")
         check(await page_a.locator("text=智能编排").count() >= 1, "/login 品牌能力徽章（智能编排）可见")
         check(await page_a.locator("text=Agnes 模型").count() >= 1, "/login 品牌能力徽章（Agnes 模型）可见")
         check(await page_a.locator("text=认证资产").count() >= 1, "/login 品牌能力徽章（认证资产）可见")
         check(await page_a.locator("text=审计账本").count() >= 1, "/login 品牌能力徽章（审计账本）可见")
+        check(await page_a.evaluate("() => document.documentElement.scrollHeight") <= 1080,
+              "/login 1920×1080 不溢出")
         await pause(page_a)
         await shot(page_a, "01_login")
 
@@ -265,14 +268,13 @@ async def run():
         errors = []
         page.on("pageerror", lambda e: errors.append(str(e)))
 
-        # ② 登录后 → /dashboard
-        print("\n── ② 工作台总览（登录后首页）──")
+        # ② 登录后 → /dashboard（V15.1：竞品首页导航，无侧栏壳）
+        print("\n── ② 首页导航（登录后首页）──")
         await page.goto(BASE + "/dashboard", wait_until="networkidle")
-        await page.wait_for_selector("text=工作台总览", timeout=10000)
-        check("工作台总览" in page.url or await page.locator("text=工作台总览").count() >= 1, "登录后 /dashboard 可达")
-        await check_competitor_layout(page, "/dashboard")
+        await page.wait_for_selector(".home-title", timeout=10000)
+        check(await page.locator(".home-title").inner_text() == "AI 测试编排平台", "首页导航标题可见")
+        check(await page.locator(".nav-card").count() == 10, "首页 10 张模块导航卡")
         await check_no_overflow_1920(page)
-        await check_content_scroll(page)
         await pause(page)
         await shot(page, "02_dashboard")
 

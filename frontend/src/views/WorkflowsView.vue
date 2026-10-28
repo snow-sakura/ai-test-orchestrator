@@ -38,7 +38,7 @@
     </div>
 
     <!-- 工作流卡片 -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
       <div
         v-for="wf in filteredWorkflows"
         :key="wf.id"
